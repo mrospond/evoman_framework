@@ -11,7 +11,12 @@ LIM_LOWER = -1
 N_HIDDEN_NEURONS = 10
 POP_SIZE = 100
 GENERATIONS = 200
+
+# TWEAK:
 MIN_MUTATION = 0.001  # minimum value of mutation
+TOURNAMENT_K = 10
+LOWER_CAUCHY = -2
+UPPER_CAUCHY = 2
 # DOOMSDAY = 0.4  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
 
 
@@ -66,11 +71,11 @@ class SpecializedEA():
 
         return (pop, fit_pop, prob_pop)
 
-    def tournament(self, pop, fit_pop, prob_pop, k) -> tuple[ndarray, ndarray, ndarray]:
+    def tournament(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
         Select best individual from random sample of "k" indivduals from pop.
         """
-        sample = random.sample(range(0, POP_SIZE-1), k)  # generate indexes of sampled individuals
+        sample = random.sample(range(0, POP_SIZE-1), TOURNAMENT_K)  # generate indexes of sampled individuals
 
         best_fit = fit_pop[sample[0]]
         best_indiv = sample[0]
@@ -112,7 +117,7 @@ class SpecializedEA():
         if np.abs(r < MIN_MUTATION):  # if |r| < MIN_MUTATION, it is set to MIN_MUTATION or -MIN_MUTATION
             if r < 0: r = -MIN_MUTATION
             if r >= 0: r = MIN_MUTATION
-        elif r < -2 or r > 2:  # r must be in range [-2, 2]
+        elif r < LOWER_CAUCHY or r > UPPER_CAUCHY:  # r must be in range [-2, 2]
             return self.sample_cauchy()
 
         return r
@@ -125,7 +130,7 @@ class SpecializedEA():
         for i in range(self.n_weights):
             if random.uniform(0, 1) <= mutation_prob:
                 delta = self.sample_cauchy()
-                child[i] = -2 + (child[i]+delta - 2)%4  # wraparound in range [-2, 2]
+                child[i] = LOWER_CAUCHY + (child[i]+delta + LOWER_CAUCHY) % 4  # wraparound in range [-2, 2]
 
         # Mutate mutation probability
         if random.uniform(0, 1) <= mutation_prob:
@@ -134,12 +139,12 @@ class SpecializedEA():
 
         return child, mutation_prob
 
-    def reproduce(self, pop, fit_pop, prob_pop, tournament_k) -> tuple[ndarray, ndarray]:
+    def reproduce(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray]:
         all_offspring_weights = np.empty((0, self.n_weights))
         all_offspring_mutation_probs = []
         for _ in range(0, POP_SIZE, 2):  # go by pairs of parents
-            p1, p1_fit, p1_prob = self.tournament(pop, fit_pop, prob_pop, tournament_k)
-            p2, p2_fit, p2_prob = self.tournament(pop, fit_pop, prob_pop, tournament_k)
+            p1, p1_fit, p1_prob = self.tournament(pop, fit_pop, prob_pop)
+            p2, p2_fit, p2_prob = self.tournament(pop, fit_pop, prob_pop)
 
             mutation_prob = p1_fit/(p1_fit+p2_fit)*p1_prob + p2_fit/(p1_fit+p2_fit)*p2_prob  # weighted average dependant on fitness
 
@@ -177,10 +182,11 @@ class SpecializedEA():
 
         return (pop, fit_pop)
 
-    def selection(self, pop, fit_pop, prob_pop, best_i) -> tuple[ndarray, ndarray, ndarray]:
+    def selection(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
-        Exponential ranking-based selection.
+        Exponential ranking-based selection with elitism.
         """
+        best_i = np.argmax(fit_pop)
         sorted_pop_indices = np.argsort(fit_pop)
         pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
         pop_selection_probs /= np.sum(pop_selection_probs)
@@ -195,7 +201,7 @@ class SpecializedEA():
         return (pop, fit_pop, prob_pop)
 
     def evolve_pop(self, pop, fit_pop, prob_pop, reshuffle_t) -> tuple[ndarray, ndarray, ndarray]:
-        offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop, 10)
+        offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
         fit_offspring = self.get_fitness(offspring)
 
         # Select from both parents and offsprong
@@ -204,13 +210,16 @@ class SpecializedEA():
         prob_alltogether = np.append(prob_pop, prob_offspring)
 
         best_i = np.argmax(fit_alltogether)
-        fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
-        # best_fit = fit_offspring[best_i]
+        assert fit_alltogether[best_i] == max(fit_alltogether) # TODO remove
+
+        # fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
+        assert fit_alltogether[best_i] == max(fit_alltogether) # TODO remove
+
         self.last_best = alltogether[best_i]
         self.last_best_prob = prob_alltogether[best_i]
 
-        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
-
+        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether)
+        assert max(fit_alltogether) == max(new_pop_fit) # TODO remove
         # if self.last_best_fit is None or best_fit > self.last_best_fit:
         #     self.last_best_fit = best_fit
         #     self.not_improved = 0
@@ -238,7 +247,6 @@ class SpecializedEA():
         with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:
             f.write(f"{self.gen},{best_fit},{mean_fit},{std_fit},{best_prob},{mean_prob},{std_prob}\n")
 
-
     def run_generation(self):
         if self.env.solutions is None:
             pop, fit_pop, prob_pop = self.gen_pop()
@@ -248,7 +256,6 @@ class SpecializedEA():
         new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop, 10)
 
         self.stats(new_fit_pop, new_prob_pop)
-        # TODO bunch of writing to file stuff
 
         self.env.update_solutions([new_pop, new_fit_pop, new_prob_pop])
         self.env.save_state()
@@ -265,7 +272,8 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
-    experiment_name = 'specialized_ea'
+    min_mutation_str = str(MIN_MUTATION).replace(".", "_")
+    experiment_name = f"specialized_ea-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
@@ -275,7 +283,7 @@ if __name__ == "__main__":
     ea = SpecializedEA(experiment_name, 1)
     for i in range(GENERATIONS):
         ea.run_generation()
-        if i % 10 == 0:
-            ea.show_best()
+        # if i % 10 == 0:
+        #     ea.show_best()
 
     ea.show_best()
