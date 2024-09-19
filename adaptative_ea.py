@@ -14,7 +14,7 @@ GENERATIONS = 200
 
 # TWEAK:
 MIN_MUTATION = 0.001  # minimum value of mutation
-TOURNAMENT_K = 10
+TOURNAMENT_K = 4
 LOWER_CAUCHY = -2
 UPPER_CAUCHY = 2
 # DOOMSDAY = 0.4  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
@@ -243,7 +243,7 @@ class SpecializedEA():
         mean_prob = np.mean(prob_pop)
         std_prob = np.std(prob_pop)
 
-        print(f"{self.gen}:\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}\tbest_prob:{best_prob}\tmean_prob{mean_prob}\tstd_prob:{std_prob}")
+        print(f"{self.gen}:\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}\tbest_prob:{best_prob}\tmean_prob:{mean_prob}\tstd_prob:{std_prob}")
         with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:
             f.write(f"{self.gen},{best_fit},{mean_fit},{std_fit},{best_prob},{mean_prob},{std_prob}\n")
 
@@ -278,7 +278,7 @@ if __name__ == "__main__":
         os.makedirs(experiment_name)
 
     with open(f"{experiment_name}/stats.csv", "w+") as f:
-        f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob:,std_prob\n")
+        f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,std_prob\n")
 
     ea = SpecializedEA(experiment_name, 1)
     for i in range(GENERATIONS):
