@@ -13,7 +13,7 @@ POP_SIZE = 100
 GENERATIONS = 200
 
 # TWEAK:
-MIN_MUTATION = 0.001  # minimum value of mutation
+MIN_MUTATION = 0.005  # minimum value of mutation
 TOURNAMENT_K = 4
 LOWER_CAUCHY = -2
 UPPER_CAUCHY = 2
@@ -108,7 +108,7 @@ class SpecializedEA():
 
         return (c1, c1_prob, c2, c2_prob)
 
-    def sample_cauchy(self) -> float:
+    def sample_cauchy(self, lower = LOWER_CAUCHY, upper = UPPER_CAUCHY) -> float:
         """
         Sample cauchy distribution with range [-2, 2] and samples with an absolute
         value of < MIN_MUTATION are forced to -MIN_MUTATION or MIN_MUTATION
@@ -117,8 +117,8 @@ class SpecializedEA():
         if np.abs(r < MIN_MUTATION):  # if |r| < MIN_MUTATION, it is set to MIN_MUTATION or -MIN_MUTATION
             if r < 0: r = -MIN_MUTATION
             if r >= 0: r = MIN_MUTATION
-        elif r < LOWER_CAUCHY or r > UPPER_CAUCHY:  # r must be in range [-2, 2]
-            return self.sample_cauchy()
+        elif r < lower or r > upper:  # r must be in range [-2, 2]
+            return self.sample_cauchy(0, 1)
 
         return r
 
@@ -134,7 +134,7 @@ class SpecializedEA():
 
         # Mutate mutation probability
         if random.uniform(0, 1) <= mutation_prob:
-            delta = self.sample_cauchy()
+            delta = self.sample_cauchy(0, 1)
             mutation_prob = (mutation_prob+delta)%1  # wraparound in range [0, 1]
 
         return child, mutation_prob
@@ -190,7 +190,7 @@ class SpecializedEA():
         sorted_pop_indices = np.argsort(fit_pop)
         pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
         pop_selection_probs /= np.sum(pop_selection_probs)
-        chosen = np.random.choice(pop.shape[0], POP_SIZE , p=pop_selection_probs, replace=False)
+        chosen = np.random.choice(pop.shape[0], POP_SIZE, p=pop_selection_probs, replace=False)
         if best_i not in chosen:
             chosen = np.append(chosen[1:], best_i)  # always include best
 
@@ -272,15 +272,16 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
+    enemy = 1
     min_mutation_str = str(MIN_MUTATION).replace(".", "_")
-    experiment_name = f"specialized_ea-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
+    experiment_name = f"specialized_ea-{enemy}-{POP_SIZE}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
     with open(f"{experiment_name}/stats.csv", "w+") as f:
         f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,std_prob\n")
 
-    ea = SpecializedEA(experiment_name, 1)
+    ea = SpecializedEA(experiment_name, enemy)
     for i in range(GENERATIONS):
         ea.run_generation()
         if i % 50 == 0:
