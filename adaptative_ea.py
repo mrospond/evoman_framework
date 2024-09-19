@@ -1,4 +1,4 @@
-import sys, os, random
+import os, random
 import numpy as np
 from numpy import ndarray
 from scipy.stats import cauchy
@@ -13,6 +13,7 @@ POP_SIZE = 100
 GENERATIONS = 200
 MIN_MUTATION = 0.001  # minimum value of mutation
 # DOOMSDAY = 0.4  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
+
 
 class SpecializedEA():
     def __init__(self, experiment_name, enemy) -> None:
@@ -234,6 +235,9 @@ class SpecializedEA():
         std_prob = np.std(prob_pop)
 
         print(f"{self.gen}:\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}\tbest_prob:{best_prob}\tmean_prob:{mean_prob}\tstd_prob:{std_prob}")
+        with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:
+            f.write(f"{self.gen},{best_fit},{mean_fit},{std_fit},{best_prob},{mean_prob},{std_prob}\n")
+
 
     def run_generation(self):
         if self.env.solutions is None:
@@ -259,10 +263,14 @@ class SpecializedEA():
         self.env.update_parameter("speed", "fastest")
         self.env.update_parameter("visuals", False)
 
+
 if __name__ == "__main__":
     experiment_name = 'specialized_ea'
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
+
+    with open(f"{experiment_name}/stats.csv", "w+") as f:
+        f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob:,std_prob\n")
 
     ea = SpecializedEA(experiment_name, 1)
     for i in range(GENERATIONS):
