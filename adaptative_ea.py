@@ -176,32 +176,39 @@ class SpecializedEA():
 
         return (pop, fit_pop)
 
-    def selection(self, offspring, fit_offspring, prob_offspring, best_i) -> tuple[ndarray, ndarray, ndarray]:
+    def selection(self, pop, fit_pop, prob_pop, best_i) -> tuple[ndarray, ndarray, ndarray]:
         """
-        TODO selection, now just get best from offspring!!!
+        Exponential ranking-based selection.
         """
-        sorted_fit_offspring = np.argsort(fit_offspring)
-        selected_fit_offspring = sorted_fit_offspring[-POP_SIZE-1:-1]
-        if best_i not in selected_fit_offspring:
-            selected_fit_offspring[-1] = best_i
+        sorted_pop_indices = np.argsort(fit_pop)
+        pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
+        pop_selection_probs /= np.sum(pop_selection_probs)
+        chosen = np.random.choice(pop.shape[0], POP_SIZE , p=pop_selection_probs, replace=False)
+        if best_i not in chosen:
+            chosen = np.append(chosen[1:], best_i)  # always include best
 
-        pop = np.array([offspring[i] for i in selected_fit_offspring])
-        pop_fit = np.array([fit_offspring[i] for i in selected_fit_offspring])
-        pop_prob = np.array([prob_offspring[i] for i in selected_fit_offspring])
+        pop = pop[chosen]
+        fit_pop = fit_pop[chosen]
+        prob_pop = prob_pop[chosen]
 
-        return (pop, pop_fit, pop_prob)
+        return (pop, fit_pop, prob_pop)
 
     def evolve_pop(self, pop, fit_pop, prob_pop, reshuffle_t) -> tuple[ndarray, ndarray, ndarray]:
-        offspring, offspring_prob = self.reproduce(pop, fit_pop, prob_pop, 10)
+        offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop, 10)
         fit_offspring = self.get_fitness(offspring)
 
-        best_i = np.argmax(fit_offspring)
-        fit_offspring[best_i] = float(self.get_fitness(np.array([offspring[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
-        # best_fit = fit_offspring[best_i]
-        self.last_best = offspring[best_i]
-        self.last_best_prob = offspring_prob[best_i]
+        # Select from both parents and offsprong
+        alltogether = np.vstack((pop, offspring))
+        fit_alltogether = np.append(fit_pop, fit_offspring)
+        prob_alltogether = np.append(prob_pop, prob_offspring)
 
-        new_pop, new_pop_fit, new_pop_prob = self.selection(offspring, fit_offspring, offspring_prob, best_i)
+        best_i = np.argmax(fit_alltogether)
+        fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
+        # best_fit = fit_offspring[best_i]
+        self.last_best = alltogether[best_i]
+        self.last_best_prob = prob_alltogether[best_i]
+
+        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
 
         # if self.last_best_fit is None or best_fit > self.last_best_fit:
         #     self.last_best_fit = best_fit
