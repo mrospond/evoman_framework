@@ -10,14 +10,15 @@ LIM_UPPER = 1
 LIM_LOWER = -1
 N_HIDDEN_NEURONS = 10
 POP_SIZE = 100
-GENERATIONS = 200
+GENERATIONS = 100
 
 # TWEAK:
 MIN_MUTATION = 0.005  # minimum value of mutation
 TOURNAMENT_K = 4
 LOWER_CAUCHY = -2
 UPPER_CAUCHY = 2
-# DOOMSDAY = 0.4  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
+DOOMSDAY_GENS = 1500000
+DOOMSDAY = 0.5  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
 
 
 class SpecializedEA():
@@ -159,28 +160,25 @@ class SpecializedEA():
 
         return (all_offspring_weights, np.array(all_offspring_mutation_probs))
 
-    def reshuffle(self, pop, fit_pop) -> tuple[ndarray, ndarray]:
+    def reshuffle(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
         Drastic restructuring: kill off DOOMSDAY*POP_SIZE individuals.
         TODO: current is their implementation
         """
-        worst_n = np.round(DOOMSDAY*POP_SIZE)
+        print("\nDOOMSDAY!!!!!!!\n")
+
+        worst_n = int(np.round(DOOMSDAY*POP_SIZE))
         sorted_fit_pop = np.argsort(fit_pop)
         worst_fit_pop = sorted_fit_pop[0:worst_n]
 
-        best_indiv = pop[sorted_fit_pop[-1]]
-
         for i in worst_fit_pop:
+            prob_pop[i] = np.random.uniform(0, 1)
             for w in range(0, self.n_weights):
-                prob_thresh = np.random.uniform(0, 1)  # TODO: maybe make prob threshold relative to generation number (higher prob of random at start)
-                if np.random.uniform(0, 1) <= prob_thresh:
-                    pop[i][w] = np.random.uniform(LIM_LOWER, LIM_UPPER)
-                else:
-                    pop[i][w] = best_indiv[w]  # get value from best indiv
+                pop[i][w] = np.random.uniform(LIM_LOWER, LIM_UPPER)
 
             fit_pop[i] = self.get_fitness([pop[i]])
 
-        return (pop, fit_pop)
+        return (pop, fit_pop, prob_pop)
 
     def selection(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
@@ -200,7 +198,7 @@ class SpecializedEA():
 
         return (pop, fit_pop, prob_pop)
 
-    def evolve_pop(self, pop, fit_pop, prob_pop, reshuffle_t) -> tuple[ndarray, ndarray, ndarray]:
+    def evolve_pop(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
         fit_offspring = self.get_fitness(offspring)
 
@@ -209,25 +207,30 @@ class SpecializedEA():
         fit_alltogether = np.append(fit_pop, fit_offspring)
         prob_alltogether = np.append(prob_pop, prob_offspring)
 
-        best_i = np.argmax(fit_alltogether)
-        assert fit_alltogether[best_i] == max(fit_alltogether) # TODO remove
+        new_best_i = np.argmax(fit_alltogether)
+        assert fit_alltogether[new_best_i] == max(fit_alltogether) # TODO remove
 
         # fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
-        assert fit_alltogether[best_i] == max(fit_alltogether) # TODO remove
+        assert fit_alltogether[new_best_i] == max(fit_alltogether) # TODO remove
 
-        self.last_best = alltogether[best_i]
-        self.last_best_prob = prob_alltogether[best_i]
+        self.last_best_prob = prob_alltogether[new_best_i]
 
         new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether)
         assert max(fit_alltogether) == max(new_pop_fit) # TODO remove
-        # if self.last_best_fit is None or best_fit > self.last_best_fit:
-        #     self.last_best_fit = best_fit
-        #     self.not_improved = 0
-        # else:
-        #     self.not_improved += 1
 
-        # if self.not_improved >= reshuffle_t:
-        #     new_pop, new_pop_fit = self.reshuffle(new_pop, new_pop_fit)
+        if self.last_best_fit is None or max(new_pop_fit) > self.last_best_fit:
+            self.last_best_fit = max(new_pop_fit)
+            self.not_improved = 0
+        else:
+            self.not_improved += 1
+
+        if self.not_improved >= DOOMSDAY_GENS:
+            new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
+
+        new_best_i = np.argmax(new_pop_fit)
+        self.last_best = new_pop[new_best_i]
+        self.last_best_fit = new_pop_fit[new_best_i]
+        self.last_best_prob = new_pop_prob[new_best_i]
 
         return (new_pop, new_pop_fit, new_pop_prob)
 
@@ -235,11 +238,11 @@ class SpecializedEA():
         """
         TODO very basic, could be better :)
         """
-        best_fit = np.max(fit_pop)
+        best_fit = self.last_best_fit
         mean_fit = np.mean(fit_pop)
         std_fit = np.std(fit_pop)
 
-        best_prob = np.max(prob_pop)
+        best_prob = self.last_best_prob
         mean_prob = np.mean(prob_pop)
         std_prob = np.std(prob_pop)
 
@@ -253,7 +256,7 @@ class SpecializedEA():
         else:
             pop, fit_pop, prob_pop = self.env.solutions
 
-        new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop, 10)
+        new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
 
         self.stats(new_fit_pop, new_prob_pop)
 
@@ -272,7 +275,7 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
-    enemy = 1
+    enemy = 2
     min_mutation_str = str(MIN_MUTATION).replace(".", "_")
     experiment_name = f"specialized_ea-{enemy}-{POP_SIZE}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
     if not os.path.exists(experiment_name):
@@ -284,7 +287,7 @@ if __name__ == "__main__":
     ea = SpecializedEA(experiment_name, enemy)
     for i in range(GENERATIONS):
         ea.run_generation()
-        if i % 50 == 0:
+        if i % 10 == 0:
             ea.show_best()
 
     ea.show_best()
