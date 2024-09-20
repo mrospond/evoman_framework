@@ -18,7 +18,7 @@ TOURNAMENT_K = 4
 LOWER_CAUCHY = -2
 UPPER_CAUCHY = 2
 DOOMSDAY_GENS = 15
-DOOMSDAY = 0.8  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
+DOOMSDAY = 0.5  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
 MAX_DIFF_STABLE = 2
 
 
@@ -41,6 +41,7 @@ class SpecializedEA():
         self.last_best = None
         self.last_best_fit = None
         self.last_best_prob = None
+        self.best_fit_since_dooms = None
         self.not_improved = 0  # TODO now this is best, could the mean
 
     def limits(self, w) -> float:  # TODO literally their code
@@ -139,7 +140,7 @@ class SpecializedEA():
             delta = self.sample_cauchy(0, 1)
             mutation_prob = (mutation_prob+delta)%1  # wraparound in range [0, 1]
 
-        return child, mutation_prob
+        return child, min(1, max(0, mutation_prob))
 
     def reproduce(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray]:
         all_offspring_weights = np.empty((0, self.n_weights))
@@ -199,7 +200,7 @@ class SpecializedEA():
 
         return (pop, fit_pop, prob_pop)
 
-    def two_of_three(self, indiv) -> bool:
+    def two_of_three(self, indiv) -> int:
         val1 = self.get_fitness([indiv])[0]
         val2 = self.get_fitness([indiv])[0]
         val3 = self.get_fitness([indiv])[0]
@@ -240,14 +241,16 @@ class SpecializedEA():
         best_i = self.get_stable_best(alltogether, fit_alltogether)
         new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
 
-        if self.last_best_fit is None or max(new_pop_fit) > self.last_best_fit:
-            self.last_best_fit = max(new_pop_fit)
+        if self.best_fit_since_dooms is None or max(new_pop_fit) > self.best_fit_since_dooms:
+            self.best_fit_since_dooms = max(new_pop_fit)
             self.not_improved = 0
         else:
             self.not_improved += 1
 
+        print("not improved", self.not_improved)
         if self.not_improved >= DOOMSDAY_GENS:
             new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
+            self.best_fit_since_dooms = None
 
         new_best_i = self.get_stable_best(new_pop, new_pop_fit)
         # new_pop_fit[new_best_i] = self.get_fitness([new_pop[new_best_i]])[0]  # repeats best eval, for stability issues
@@ -262,7 +265,7 @@ class SpecializedEA():
         """
         TODO very basic, could be better :)
         """
-        best_fit = np.max(fit_pop) #  self.last_best_fit
+        best_fit = np.max(fit_pop)  # self.last_best_fit
         mean_fit = np.mean(fit_pop)
         std_fit = np.std(fit_pop)
 
@@ -301,9 +304,9 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
-    enemy = 2
+    enemy = 3
     min_mutation_str = str(MIN_MUTATION).replace(".", "_")
-    experiment_name = f"specialized_ea-{enemy}-{POP_SIZE}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
+    experiment_name = f"specialized_ea-{enemy}-{POP_SIZE}-{DOOMSDAY_GENS}-{DOOMSDAY}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
