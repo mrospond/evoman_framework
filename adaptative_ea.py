@@ -17,8 +17,9 @@ MIN_MUTATION = 0.005  # minimum value of mutation
 TOURNAMENT_K = 4
 LOWER_CAUCHY = -2
 UPPER_CAUCHY = 2
-DOOMSDAY_GENS = 1500000
-DOOMSDAY = 0.5  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
+DOOMSDAY_GENS = 15
+DOOMSDAY = 0.8  # PART OF POPULATION THAT GETS DESTROYED DURING RESHUFFLE
+MAX_DIFF_STABLE = 10
 
 
 class SpecializedEA():
@@ -180,11 +181,11 @@ class SpecializedEA():
 
         return (pop, fit_pop, prob_pop)
 
-    def selection(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
+    def selection(self, pop, fit_pop, prob_pop, best_i) -> tuple[ndarray, ndarray, ndarray]:
         """
         Exponential ranking-based selection with elitism.
         """
-        best_i = np.argmax(fit_pop)
+        # best_i = np.argmax(fit_pop)
         sorted_pop_indices = np.argsort(fit_pop)
         pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
         pop_selection_probs /= np.sum(pop_selection_probs)
@@ -197,6 +198,28 @@ class SpecializedEA():
         prob_pop = prob_pop[chosen]
 
         return (pop, fit_pop, prob_pop)
+
+    def two_of_three(self, indiv) -> bool:
+        vals = [self.get_fitness([indiv])[0] for _ in range(3)]
+
+        if np.abs(vals[0] - vals[1]) <= MAX_DIFF_STABLE:
+            return True
+        if np.abs(vals[1] - vals[2]) <= MAX_DIFF_STABLE:
+            return True
+        if np.abs(vals[0] - vals[2]) <= MAX_DIFF_STABLE:
+            return True
+
+        print("was not stable", vals)
+
+        return False
+
+    def get_stable_best(self, pop, fit_pop) -> int:
+        best_i = np.argmax(fit_pop)
+        if not self.two_of_three(pop[best_i]):
+            fit_pop[best_i] = self.get_fitness(pop[best_i])[0]
+            return self.get_stable_best(pop, fit_pop)
+
+        return best_i
 
     def evolve_pop(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
@@ -215,7 +238,8 @@ class SpecializedEA():
 
         self.last_best_prob = prob_alltogether[new_best_i]
 
-        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether)
+        best_i = self.get_stable_best(alltogether, fit_alltogether)
+        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
         assert max(fit_alltogether) == max(new_pop_fit) # TODO remove
 
         if self.last_best_fit is None or max(new_pop_fit) > self.last_best_fit:
@@ -228,8 +252,11 @@ class SpecializedEA():
             new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
 
         new_best_i = np.argmax(new_pop_fit)
+        new_pop_fit[new_best_i] = self.get_fitness([new_pop[new_best_i]])[0]  # repeats best eval, for stability issues
+
         self.last_best = new_pop[new_best_i]
         self.last_best_fit = new_pop_fit[new_best_i]
+        print(self.last_best_fit, self.get_fitness([self.last_best]))
         self.last_best_prob = new_pop_prob[new_best_i]
 
         return (new_pop, new_pop_fit, new_pop_prob)
@@ -250,6 +277,9 @@ class SpecializedEA():
         with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:
             f.write(f"{self.gen},{best_fit},{mean_fit},{std_fit},{best_prob},{mean_prob},{std_prob}\n")
 
+        with open(f"{self.env.experiment_name}/weights.csv", "a+") as f:
+            f.write(",".join([str(w) for w in self.last_best]) + "\n")
+
     def run_generation(self):
         if self.env.solutions is None:
             pop, fit_pop, prob_pop = self.gen_pop()
@@ -259,6 +289,7 @@ class SpecializedEA():
         new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
 
         self.stats(new_fit_pop, new_prob_pop)
+        print("run_generation", self.get_fitness([self.last_best]))
 
         self.env.update_solutions([new_pop, new_fit_pop, new_prob_pop])
         self.env.save_state()
@@ -268,8 +299,7 @@ class SpecializedEA():
     def show_best(self):
         self.env.update_parameter("visuals", True)
         self.env.update_parameter("speed", "normal")
-        # self.get_fitness(np.array([self.last_best]))
-        self.simulate(self.last_best)
+        self.get_fitness(np.array([self.last_best]))
         self.env.update_parameter("speed", "fastest")
         self.env.update_parameter("visuals", False)
 
@@ -277,15 +307,19 @@ class SpecializedEA():
 if __name__ == "__main__":
     enemy = 2
     min_mutation_str = str(MIN_MUTATION).replace(".", "_")
-    experiment_name = f"specialized_ea-{enemy}-{POP_SIZE}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
+    experiment_name = f"specialized_ea_new_fitness-{enemy}-{POP_SIZE}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
     with open(f"{experiment_name}/stats.csv", "w+") as f:
         f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,std_prob\n")
 
+    with open(f"{experiment_name}/weights.csv", "w+") as f:
+        f.write("")
+
     ea = SpecializedEA(experiment_name, enemy)
     for i in range(GENERATIONS):
+        print("NEW GENERATION\n\n")
         ea.run_generation()
         if i % 10 == 0:
             ea.show_best()
