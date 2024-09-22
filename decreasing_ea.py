@@ -29,7 +29,7 @@ class SpecializedEA():
 
         self.n_weights = (self.env.get_num_sensors()+1)*N_HIDDEN_NEURONS + (N_HIDDEN_NEURONS+1)*5
         self.gen = 0
-        self.mutation_prob = 1
+        self.mutation_prob = MIN_MUTATION
 
         self.last_best = None
         self.last_best_fit = None
@@ -240,7 +240,7 @@ class SpecializedEA():
         self.env.save_state()
 
         self.gen += 1
-        self.mutation_prob = max(MIN_MUTATION, self.mutation_prob - MUTATION_DELTA)
+        self.mutation_prob = min(1-MIN_MUTATION, max(MIN_MUTATION, self.mutation_prob - MUTATION_DELTA))
 
     def show_best(self):
         self.env.update_parameter("visuals", True)
@@ -251,9 +251,10 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
-    min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
-    mutation_delta = f"{MUTATION_DELTA % 1:.3f}".split('.')[1]
-    doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
+    min_mutation_str = f"{MIN_MUTATION:.3f}".split('.')[1]
+    if MUTATION_DELTA < 0: mutation_delta = "-" + f"{MUTATION_DELTA:.3f}".split('.')[1]
+    else: mutation_delta = f"{MUTATION_DELTA:.3f}".split('.')[1]
+    doomsday_str = f"{DOOMSDAY:.3f}".split('.')[1]
     experiment_name = f"decreasing_ea-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{MAX_DIFF_STABLE}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
