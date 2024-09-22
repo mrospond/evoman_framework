@@ -190,11 +190,15 @@ class SpecializedEA():
         return -1
 
     def get_stable_best(self, pop, fit_pop) -> int:
+        """
+        Returns index of individual in 'pop' with the best fitness value that
+        is also stable across two runs.
+        """
         best_i = np.argmax(fit_pop)
-        two_of_three = self.two_of_three(pop[best_i])
-        if two_of_three < -1 or np.abs(two_of_three - fit_pop[best_i]) > MAX_DIFF_STABLE :
-            print("was unstable", fit_pop[best_i])
-            fit_pop[best_i] = self.get_fitness([pop[best_i]])[0]
+        val1 = fit_pop[best_i]
+        val2 = self.get_fitness([pop[best_i]])[0]
+        if abs(val2 - val1) > MAX_DIFF_STABLE:
+            fit_pop[best_i] = np.mean([val1, val2])
             return self.get_stable_best(pop, fit_pop)
 
         return best_i
@@ -207,8 +211,11 @@ class SpecializedEA():
         alltogether = np.vstack((pop, offspring))
         fit_alltogether = np.append(fit_pop, fit_offspring)
         prob_alltogether = np.append(prob_pop, prob_offspring)
+        # Check if arrays were combined correctly
+        assert (pop[0]==alltogether[0]).all()
+        assert (offspring[0]==alltogether[len(pop)]).all()
 
-        new_best_i = np.argmax(fit_alltogether)
+        new_best_i = self.get_stable_best(alltogether, fit_alltogether)
 
         # fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
         self.last_best_prob = prob_alltogether[new_best_i]
