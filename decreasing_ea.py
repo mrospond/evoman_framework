@@ -29,7 +29,7 @@ class SpecializedEA():
 
         self.n_weights = (self.env.get_num_sensors()+1)*N_HIDDEN_NEURONS + (N_HIDDEN_NEURONS+1)*5
         self.gen = 0
-        self.mutation_prob = MIN_MUTATION
+        self.mutation_prob = 1 - MIN_MUTATION
 
         self.last_best = None
         self.last_best_fit = None
@@ -78,8 +78,8 @@ class SpecializedEA():
             c1 = np.append(p1[0:overlap_lower], np.append(overlap, p1[overlap_higher:]))
             c2 = np.append(p2[0:overlap_lower], np.append(overlap, p2[overlap_higher:]))
         else:
-            c1 = p1
-            c2 = p2
+            c1 = np.copy(p1)
+            c2 = np.copy(p2)
 
         return (c1, c2)
 
@@ -251,11 +251,20 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
-    min_mutation_str = f"{MIN_MUTATION:.3f}".split('.')[1]
-    if MUTATION_DELTA < 0: mutation_delta = "-" + f"{MUTATION_DELTA:.3f}".split('.')[1]
-    else: mutation_delta = f"{MUTATION_DELTA:.3f}".split('.')[1]
-    doomsday_str = f"{DOOMSDAY:.3f}".split('.')[1]
-    experiment_name = f"decreasing_ea-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{MAX_DIFF_STABLE}-{mutation_delta}"
+    min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
+    mutation_delta = f"{MUTATION_DELTA % 1:.3f}".split('.')[1]
+    doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
+
+    i = 0
+    if OVERRIDE:
+        while True:
+            experiment_name = f"decreasing_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+            if not os.path.exists(experiment_name):
+                break
+            else:
+                i += 1
+
+    experiment_name = f"decreasing_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
@@ -269,7 +278,7 @@ if __name__ == "__main__":
     for i in range(GENERATIONS):
         print("\n\nNEW GENERATION")
         ea.run_generation()
-        # if i % 10 == 0:
-        #     ea.show_best()
+        if i % 10 == 0:
+            ea.show_best()
 
     ea.show_best()

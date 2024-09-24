@@ -80,8 +80,8 @@ class SpecializedEA():
             c1_prob = mutation_prob
             c2_prob = mutation_prob
         else:
-            c1 = p1
-            c2 = p2
+            c1 = np.copy(p1)
+            c2 = np.copy(p2)
             c1_prob = p1_prob
             c2_prob = p2_prob
 
@@ -200,6 +200,7 @@ class SpecializedEA():
         val1 = fit_pop[best_i]
         val2 = self.get_fitness([pop[best_i]])[0]
         if abs(val2 - val1) > MAX_DIFF_STABLE:
+            print("was not stable", val1)
             fit_pop[best_i] = np.mean([val1, val2])
             return self.get_stable_best(pop, fit_pop)
 
@@ -302,7 +303,17 @@ if __name__ == "__main__":
     min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
     mutation_delta = f"{MUTATION_DELTA % 1:.3f}".split('.')[1]
     doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
-    experiment_name = f"adaptative_ea-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+
+    i = 0
+    if OVERRIDE:
+        while True:
+            experiment_name = f"adaptative_ea_alex_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+            if not os.path.exists(experiment_name):
+                break
+            else:
+                i += 1
+
+    experiment_name = f"adaptative_ea_alex_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
@@ -317,10 +328,6 @@ if __name__ == "__main__":
         print("\n\nNEW GENERATION")
         ea.run_generation()
         if i % 10 == 0:
-            print ("Current Strategy is : ", ea.goal)
             ea.show_best()
-        if i % 50 == 0 and i != 0 :
-            ea.change_strategy()
-
 
     ea.show_best()

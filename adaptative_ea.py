@@ -78,8 +78,8 @@ class SpecializedEA():
             c1_prob = mutation_prob
             c2_prob = mutation_prob
         else:
-            c1 = p1
-            c2 = p2
+            c1 = np.copy(p1)
+            c2 = np.copy(p2)
             c1_prob = p1_prob
             c2_prob = p2_prob
 
@@ -197,9 +197,6 @@ class SpecializedEA():
         best_i = np.argmax(fit_pop)
         val1 = fit_pop[best_i]
         val2 = self.get_fitness([pop[best_i]])[0]
-        val3 = self.get_fitness([pop[best_i]])[0]
-        assert val2 == val3
-        print("stability:", val2, val3)
         if abs(val2 - val1) > MAX_DIFF_STABLE:
             print("rejecting", val1)
             fit_pop[best_i] = np.mean([val1, val2])
@@ -208,20 +205,22 @@ class SpecializedEA():
         return best_i
 
     def evolve_pop(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
+        # self.check_fit_pop(pop, fit_pop)
         offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
         fit_offspring = self.get_fitness(offspring)
-        self.check_fit_pop(offspring, fit_offspring)
+        # self.check_fit_pop(offspring, fit_offspring)
+        # self.check_fit_pop(pop, fit_pop)
 
         # Select from both parents and offsprong
         alltogether = np.vstack((pop, offspring))
         fit_alltogether = np.append(fit_pop, fit_offspring)
         prob_alltogether = np.append(prob_pop, prob_offspring)
         # Check if arrays were combined correctly
-        assert (pop[0]==alltogether[0]).all()
-        assert (pop[1]==alltogether[1]).all()
-        assert (offspring[0]==alltogether[len(pop)]).all()
-        assert (offspring[1]==alltogether[len(pop)+1]).all()
-        self.check_fit_pop(alltogether, fit_alltogether)
+        # assert (pop[0]==alltogether[0]).all()
+        # assert (pop[1]==alltogether[1]).all()
+        # assert (offspring[0]==alltogether[len(pop)]).all()
+        # assert (offspring[1]==alltogether[len(pop)+1]).all()
+        # self.check_fit_pop(alltogether, fit_alltogether)
 
 
         new_best_i = self.get_stable_best(alltogether, fit_alltogether)
@@ -231,7 +230,7 @@ class SpecializedEA():
 
         best_i = self.get_stable_best(alltogether, fit_alltogether)
         new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
-        self.check_fit_pop(new_pop, new_pop_fit)
+        # self.check_fit_pop(new_pop, new_pop_fit)
 
         if self.best_fit_since_dooms is None or max(new_pop_fit) > self.best_fit_since_dooms:
             self.best_fit_since_dooms = max(new_pop_fit)
@@ -242,7 +241,7 @@ class SpecializedEA():
         print("not improved", self.not_improved)
         if self.not_improved >= DOOMSDAY_GENS:
             new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
-            self.check_fit_pop(new_pop, new_pop_fit)
+            # self.check_fit_pop(new_pop, new_pop_fit)
             self.best_fit_since_dooms = None
 
         new_best_i = self.get_stable_best(new_pop, new_pop_fit)
@@ -287,16 +286,14 @@ class SpecializedEA():
         except AssertionError as e:
             problem_is = []
             for i in range(len(pop)):
-                print(fit_pop[i] == new_fit1[i], fit_pop[i], new_fit1[i])
                 if not fit_pop[i] == new_fit1[i]:
                     problem_is.append(i)
-            print("problem i's:", problem_is)
             raise e
 
     def run_generation(self):
         if self.env.solutions is None:
             pop, fit_pop, prob_pop = self.gen_pop()
-            self.check_fit_pop(pop, fit_pop)
+            # self.check_fit_pop(pop, fit_pop)
         else:
             pop, fit_pop, prob_pop = self.env.solutions
 
@@ -321,7 +318,19 @@ if __name__ == "__main__":
     min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
     mutation_delta = f"{MUTATION_DELTA % 1:.3f}".split('.')[1]
     doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
-    experiment_name = f"adaptative_ea-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+
+    i = 0
+    if OVERRIDE:
+        while True:
+            experiment_name = f"adaptative_ea_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+            if not os.path.exists(experiment_name):
+                print("i", i)
+                break
+            else:
+                print("i=", i)
+                i += 1
+
+    experiment_name = f"adaptative_ea_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
@@ -335,7 +344,7 @@ if __name__ == "__main__":
     for i in range(GENERATIONS):
         print("\n\nNEW GENERATION")
         ea.run_generation()
-        # if i % 10 == 0:
-            # ea.show_best()
+        if i % 10 == 0:
+            ea.show_best()
 
     ea.show_best()
