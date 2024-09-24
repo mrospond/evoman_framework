@@ -164,7 +164,7 @@ class SpecializedEA():
         # best_i = np.argmax(fit_pop)
         sorted_pop_indices = np.argsort(fit_pop)
         pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
-        pop_selection_probs /= np.sum(pop_selection_probs)
+        pop_selection_probs /= np.sum(pop_selection_probs)  # make sure all probs sum to 1
         chosen = np.random.choice(pop.shape[0], POP_SIZE, p=pop_selection_probs, replace=False)
         # if best_i not in chosen:
         #     chosen = np.append(chosen[1:], best_i)  # always include best
@@ -197,7 +197,11 @@ class SpecializedEA():
         best_i = np.argmax(fit_pop)
         val1 = fit_pop[best_i]
         val2 = self.get_fitness([pop[best_i]])[0]
+        val3 = self.get_fitness([pop[best_i]])[0]
+        assert val2 == val3
+        print("stability:", val2, val3)
         if abs(val2 - val1) > MAX_DIFF_STABLE:
+            print("rejecting", val1)
             fit_pop[best_i] = np.mean([val1, val2])
             return self.get_stable_best(pop, fit_pop)
 
@@ -206,6 +210,7 @@ class SpecializedEA():
     def evolve_pop(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
         fit_offspring = self.get_fitness(offspring)
+        self.check_fit_pop(offspring, fit_offspring)
 
         # Select from both parents and offsprong
         alltogether = np.vstack((pop, offspring))
@@ -213,7 +218,11 @@ class SpecializedEA():
         prob_alltogether = np.append(prob_pop, prob_offspring)
         # Check if arrays were combined correctly
         assert (pop[0]==alltogether[0]).all()
+        assert (pop[1]==alltogether[1]).all()
         assert (offspring[0]==alltogether[len(pop)]).all()
+        assert (offspring[1]==alltogether[len(pop)+1]).all()
+        self.check_fit_pop(alltogether, fit_alltogether)
+
 
         new_best_i = self.get_stable_best(alltogether, fit_alltogether)
 
@@ -222,6 +231,7 @@ class SpecializedEA():
 
         best_i = self.get_stable_best(alltogether, fit_alltogether)
         new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
+        self.check_fit_pop(new_pop, new_pop_fit)
 
         if self.best_fit_since_dooms is None or max(new_pop_fit) > self.best_fit_since_dooms:
             self.best_fit_since_dooms = max(new_pop_fit)
@@ -232,6 +242,7 @@ class SpecializedEA():
         print("not improved", self.not_improved)
         if self.not_improved >= DOOMSDAY_GENS:
             new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
+            self.check_fit_pop(new_pop, new_pop_fit)
             self.best_fit_since_dooms = None
 
         new_best_i = self.get_stable_best(new_pop, new_pop_fit)
@@ -267,9 +278,25 @@ class SpecializedEA():
         with open(f"{self.env.experiment_name}/weights.csv", "a+") as f:
             f.write(",".join([str(w) for w in self.last_best]) + "\n")
 
+    def check_fit_pop(self, pop, fit_pop):
+        new_fit1 = self.get_fitness(pop)
+        new_fit2 = self.get_fitness(pop)  # SANITY CHECK
+        assert (new_fit1 == new_fit2).all()  # IF THIS FAILS THE WHOLE THING IS JUST UNSTABLE
+        try:
+            assert (fit_pop == new_fit1).all()
+        except AssertionError as e:
+            problem_is = []
+            for i in range(len(pop)):
+                print(fit_pop[i] == new_fit1[i], fit_pop[i], new_fit1[i])
+                if not fit_pop[i] == new_fit1[i]:
+                    problem_is.append(i)
+            print("problem i's:", problem_is)
+            raise e
+
     def run_generation(self):
         if self.env.solutions is None:
             pop, fit_pop, prob_pop = self.gen_pop()
+            self.check_fit_pop(pop, fit_pop)
         else:
             pop, fit_pop, prob_pop = self.env.solutions
 
@@ -308,7 +335,7 @@ if __name__ == "__main__":
     for i in range(GENERATIONS):
         print("\n\nNEW GENERATION")
         ea.run_generation()
-        if i % 10 == 0:
-             ea.show_best()
+        # if i % 10 == 0:
+            # ea.show_best()
 
     ea.show_best()
