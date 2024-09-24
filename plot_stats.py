@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-experiment_name = "decreasing_ea-3-300-20-250-010-30--2-2-5--015"
+experiment_name = "adaptative_ea-3-100-20-250-010-5--2-2-015"
 df = pd.read_csv(f"{experiment_name}/stats.csv", delimiter=",", dtype=str).astype(float)
 enemy = experiment_name.split("-")[1]
 pop_size = experiment_name.split("-")[2]

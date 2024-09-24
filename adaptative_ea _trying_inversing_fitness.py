@@ -4,7 +4,7 @@ from numpy import ndarray
 from scipy.stats import cauchy
 from params import *
 
-from evoman.environment import Environment
+from evoman.environment_alex import Environment
 from demo_controller import player_controller
 
 LIM_UPPER = 1
@@ -24,8 +24,10 @@ class SpecializedEA():
             player_controller=player_controller(N_HIDDEN_NEURONS),
             speed="fastest",
             visuals=False,
+            goal = "kill"
         )
 
+        self.goal = "kill"
         self.n_weights = (self.env.get_num_sensors()+1)*N_HIDDEN_NEURONS + (N_HIDDEN_NEURONS+1)*5
         self.gen = 0
         self.last_best = None
@@ -289,6 +291,12 @@ class SpecializedEA():
         self.env.update_parameter("speed", "fastest")
         self.env.update_parameter("visuals", False)
 
+    def change_strategy(self):
+        strategy = {"kill": "die", "die": "kill"}
+        self.goal = strategy[self.goal]
+        print("\n")
+        print(" MESSAGE : New strategy is now : ", self.goal)
+
 
 if __name__ == "__main__":
     min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
@@ -309,6 +317,10 @@ if __name__ == "__main__":
         print("\n\nNEW GENERATION")
         ea.run_generation()
         if i % 10 == 0:
-             ea.show_best()
+            print ("Current Strategy is : ", ea.goal)
+            ea.show_best()
+        if i % 50 == 0 and i != 0 :
+            ea.change_strategy()
+
 
     ea.show_best()
