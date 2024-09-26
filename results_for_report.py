@@ -38,7 +38,7 @@ def decreasing():
             os.makedirs(experiment_name)
 
         with open(f"{experiment_name}/stats.csv", "w+") as f:
-            f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,median_prob,std_prob,doomsday\n")
+            f.write("gen,best_fit,mean_fit,std_fit,prob,doomsday\n")
 
         with open(f"{experiment_name}/weights.csv", "w+") as f:
             f.write("")
