@@ -59,7 +59,7 @@ class SpecializedEA():
                 indiv, fit = self.gen_indiv(max_fit)
                 pop[i] = indiv
                 fit_pop[i] = fit
-        prob_pop = np.random.uniform(0, 1, POP_SIZE)
+        prob_pop = np.random.uniform(MIN_MUTATION, MAX_CROSSOVER-MIN_MUTATION, POP_SIZE)
 
         return (np.array(pop), fit_pop, prob_pop)
 
@@ -70,19 +70,19 @@ class SpecializedEA():
         sample = random.sample(range(0, POP_SIZE-1), TOURNAMENT_K)  # generate indexes of sampled individuals
 
         best_fit = fit_pop[sample[0]]
-        best_indiv = sample[0]
+        best_i = sample[0]
         for i in sample:
             if fit_pop[i] > best_fit:
                 best_fit = fit_pop[i]
-                best_indiv = i
+                best_i = i
 
-        return (pop[best_indiv], fit_pop[best_indiv], prob_pop[best_indiv])
+        return (pop[best_i], fit_pop[best_i], prob_pop[best_i])
 
     def recombination(self, mutation_prob, p1, p1_prob, p2, p2_prob) -> tuple[ndarray, ndarray, ndarray, ndarray]:
         """
         TODO explain
         """
-        crossover_prob = 1-mutation_prob  # probability of doing crossover with both parents
+        crossover_prob = MAX_CROSSOVER-mutation_prob  # probability of doing crossover with both parents
 
         if random.uniform(0, 1) <= crossover_prob:
             overlap_lower = int(random.uniform(0, self.n_weights - 2))
@@ -100,7 +100,7 @@ class SpecializedEA():
 
         return (c1, c1_prob, c2, c2_prob)
 
-    def sample_cauchy(self, lower = LOWER_CAUCHY, upper = UPPER_CAUCHY) -> float:
+    def sample_cauchy(self, lower, upper) -> float:
         """
         Sample cauchy distribution with range [-2, 2] and samples with an absolute
         value of < MIN_MUTATION are forced to -MIN_MUTATION or MIN_MUTATION
@@ -109,28 +109,28 @@ class SpecializedEA():
         if np.abs(r < MIN_MUTATION):  # if |r| < MIN_MUTATION, it is set to MIN_MUTATION or -MIN_MUTATION
             if r < 0: r = -MIN_MUTATION
             if r >= 0: r = MIN_MUTATION
-        elif r < lower or r > upper:  # r must be in range [-2, 2]
+        elif r < lower or r > upper:  # r must be in range [lower, upper], if not, retry
             return self.sample_cauchy(lower, upper)
 
         return r
 
     def mutation(self, mutation_prob, child, child_prob) -> tuple[ndarray, float]:
         """
-        TODO mutation
+        Mutate
         """
         # Mutate weights
         for i in range(self.n_weights):
             if random.uniform(0, 1) <= mutation_prob:
-                delta = self.sample_cauchy()
+                delta = self.sample_cauchy(-2, 2)
                 new_val = LOWER_CAUCHY + (child[i]+delta + LOWER_CAUCHY) % 4  # wraparound in range [-2, 2]
                 child[i] = min(LIM_UPPER, max(LIM_LOWER, new_val))
 
         # Mutate mutation probability
         if random.uniform(0, 1) <= mutation_prob:
             delta = self.sample_cauchy(-1, 1)
-            child_prob = (child_prob+delta)%1  # wraparound in range [0, 1]
+            child_prob = (child_prob+delta)%MAX_CROSSOVER  # wraparound in range [0, 1]
 
-        return child, min(1, max(0, child_prob))
+        return child, min(MAX_CROSSOVER-MIN_MUTATION, max(MIN_MUTATION, child_prob))
 
     def reproduce(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray]:
         all_offspring_weights = np.empty((0, self.n_weights))
@@ -139,11 +139,11 @@ class SpecializedEA():
             p1, p1_fit, p1_prob = self.tournament(pop, fit_pop, prob_pop)
             p2, p2_fit, p2_prob = self.tournament(pop, fit_pop, prob_pop)
 
-            mutation_prob = p1_fit/(p1_fit+p2_fit)*p1_prob + p2_fit/(p1_fit+p2_fit)*p2_prob  # weighted average dependant on fitness
+            new_mutation_prob = p1_fit/(p1_fit+p2_fit)*p1_prob + p2_fit/(p1_fit+p2_fit)*p2_prob  # weighted average dependant on fitness
 
-            c1, c1_prob, c2, c2_prob = self.recombination(mutation_prob, p1, p1_prob, p2, p2_prob)
-            c1, c1_prob = self.mutation(mutation_prob, c1, c1_prob)
-            c2, c2_prob = self.mutation(mutation_prob, c2, c2_prob)
+            c1, c1_prob, c2, c2_prob = self.recombination(new_mutation_prob, p1, p1_prob, p2, p2_prob)
+            c1, c1_prob = self.mutation(new_mutation_prob, c1, c1_prob)
+            c2, c2_prob = self.mutation(new_mutation_prob, c2, c2_prob)
 
             all_offspring_weights = np.vstack((all_offspring_weights, c1))
             all_offspring_weights = np.vstack((all_offspring_weights, c2))
@@ -154,17 +154,17 @@ class SpecializedEA():
 
     def reshuffle(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
-        Drastic restructuring: kill off DOOMSDAY*POP_SIZE individuals and replace
+        Drastic restructuring: kill off DOOMSDAY*POP_SIZE worst individuals and replace
         with randomly generated individuals.
         """
         print("\nDOOMSDAY!!!!!!!\n")
 
         worst_n = int(np.round(DOOMSDAY*POP_SIZE))
         sorted_fit_pop = np.argsort(fit_pop)
-        worst_fit_pop = sorted_fit_pop[0:worst_n]
+        worst_fit_pop_is = sorted_fit_pop[0:worst_n]
 
-        for i in worst_fit_pop:
-            prob_pop[i] = np.random.uniform(0, 1)
+        for i in worst_fit_pop_is:
+            prob_pop[i] = np.random.uniform(MIN_MUTATION, MAX_CROSSOVER-MIN_MUTATION)
             for w in range(0, self.n_weights):
                 pop[i][w] = np.random.uniform(LIM_LOWER, LIM_UPPER)
 
@@ -172,37 +172,20 @@ class SpecializedEA():
 
         return (pop, fit_pop, prob_pop)
 
-    def selection(self, pop, fit_pop, prob_pop, best_i) -> tuple[ndarray, ndarray, ndarray]:
+    def selection(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
         Exponential ranking-based selection.
         """
-        # best_i = np.argmax(fit_pop)
         sorted_pop_indices = np.argsort(fit_pop)
-        pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-1), sorted_pop_indices)))
+        pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-i), sorted_pop_indices)))
         pop_selection_probs /= np.sum(pop_selection_probs)  # make sure all probs sum to 1
         chosen = np.random.choice(pop.shape[0], POP_SIZE, p=pop_selection_probs, replace=False)
-        # if best_i not in chosen:
-        #     chosen = np.append(chosen[1:], best_i)  # always include best
 
         pop = pop[chosen]
         fit_pop = fit_pop[chosen]
         prob_pop = prob_pop[chosen]
 
         return (pop, fit_pop, prob_pop)
-
-    def two_of_three(self, indiv) -> int:
-        val1 = self.get_fitness([indiv])[0]
-        val2 = self.get_fitness([indiv])[0]
-        val3 = self.get_fitness([indiv])[0]
-
-        if np.abs(val1 - val2) <= MAX_DIFF_STABLE:
-            return np.mean([val1, val2])
-        if np.abs(val2 - val3) <= MAX_DIFF_STABLE:
-            return np.mean([val2, val3])
-        if np.abs(val1 - val3) <= MAX_DIFF_STABLE:
-            return np.mean([val1, val3])
-
-        return -1
 
     def get_stable_best(self, pop, fit_pop) -> int:
         """
@@ -220,31 +203,15 @@ class SpecializedEA():
         return best_i
 
     def evolve_pop(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
-        # self.check_fit_pop(pop, fit_pop)
         offspring, prob_offspring = self.reproduce(pop, fit_pop, prob_pop)
         fit_offspring = self.get_fitness(offspring)
-        # self.check_fit_pop(offspring, fit_offspring)
-        # self.check_fit_pop(pop, fit_pop)
 
-        # Select from both parents and offsprong
+        # Select from both parents and offspring
         alltogether = np.vstack((pop, offspring))
         fit_alltogether = np.append(fit_pop, fit_offspring)
         prob_alltogether = np.append(prob_pop, prob_offspring)
-        # Check if arrays were combined correctly
-        # assert (pop[0]==alltogether[0]).all()
-        # assert (pop[1]==alltogether[1]).all()
-        # assert (offspring[0]==alltogether[len(pop)]).all()
-        # assert (offspring[1]==alltogether[len(pop)+1]).all()
-        # self.check_fit_pop(alltogether, fit_alltogether)
 
-
-        new_best_i = self.get_stable_best(alltogether, fit_alltogether)
-
-        # fit_alltogether[best_i] = float(self.get_fitness(np.array([alltogether[best_i]]))[0])  # repeats best eval, for stability issues TODO literally their code
-        self.last_best_prob = prob_alltogether[new_best_i]
-
-        best_i = self.get_stable_best(alltogether, fit_alltogether)
-        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether, best_i)
+        new_pop, new_pop_fit, new_pop_prob = self.selection(alltogether, fit_alltogether, prob_alltogether)
         # self.check_fit_pop(new_pop, new_pop_fit)
 
         if self.best_fit_since_dooms is None or max(new_pop_fit) > self.best_fit_since_dooms:
@@ -256,11 +223,9 @@ class SpecializedEA():
         print("not improved", self.not_improved)
         if self.not_improved >= DOOMSDAY_GENS:
             new_pop, new_pop_fit, new_pop_prob = self.reshuffle(new_pop, new_pop_fit, new_pop_prob)
-            # self.check_fit_pop(new_pop, new_pop_fit)
             self.best_fit_since_dooms = None
 
         new_best_i = self.get_stable_best(new_pop, new_pop_fit)
-        # new_pop_fit[new_best_i] = self.get_fitness([new_pop[new_best_i]])[0]  # repeats best eval, for stability issues
 
         self.last_best = new_pop[new_best_i]
         self.last_best_fit = new_pop_fit[new_best_i]
@@ -281,7 +246,7 @@ class SpecializedEA():
         std_prob = np.std(prob_pop)
         median_prob = np.median(prob_pop)
 
-        if self.best_fit_since_dooms is None:
+        if self.best_fit_since_dooms is None and self.gen > 0:
             doomsday = 1
         else:
             doomsday = 0
@@ -314,8 +279,6 @@ class SpecializedEA():
             self.last_best_fit = new_fit_pop[new_best_i]
             self.last_best_prob = new_prob_pop[new_best_i]
             self.best_fit_since_dooms = self.last_best_fit
-
-            # self.check_fit_pop(pop, fit_pop)
         else:
             pop, fit_pop, prob_pop = self.env.solutions
 
@@ -345,15 +308,14 @@ if __name__ == "__main__":
     doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
 
     i = 0
-    if OVERRIDE:
-        while True:
-            experiment_name = f"adaptative_ea_bad_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
-            if not os.path.exists(experiment_name):
-                print("i", i)
-                break
-            else:
-                print("i=", i)
-                i += 1
+    while True:
+        experiment_name = f"adaptative_ea_bad_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+        if not os.path.exists(experiment_name):
+            print("i", i)
+            break
+        else:
+            print("i=", i)
+            i += 1
 
     experiment_name = f"adaptative_ea_bad_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
