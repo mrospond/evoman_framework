@@ -1,4 +1,4 @@
-import os, random
+import os, random, sys
 import numpy as np
 from numpy import ndarray
 from scipy.stats import cauchy
@@ -251,6 +251,9 @@ class SpecializedEA():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        ENEMY = sys.argv[1]
+
     min_mutation_str = f"{MIN_MUTATION % 1:.3f}".split('.')[1]
     mutation_delta = f"{MUTATION_DELTA % 1:.3f}".split('.')[1]
     doomsday_str = f"{DOOMSDAY % 1:.3f}".split('.')[1]
@@ -258,13 +261,13 @@ if __name__ == "__main__":
     i = 0
     if OVERRIDE:
         while True:
-            experiment_name = f"decreasing_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+            experiment_name = f"decreasing_ea_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
             if not os.path.exists(experiment_name):
                 break
             else:
                 i += 1
 
-    experiment_name = f"decreasing_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+    experiment_name = f"decreasing_ea_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 

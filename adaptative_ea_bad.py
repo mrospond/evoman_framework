@@ -41,12 +41,27 @@ class SpecializedEA():
     def get_fitness(self, pop) -> ndarray:
         return np.array([self.simulate(indiv) for indiv in pop])
 
+    def gen_indiv(self, max_fit) -> ndarray:
+        while True:
+            indiv = np.random.uniform(LIM_LOWER, LIM_UPPER, (1, self.n_weights))
+            fit = self.get_fitness(indiv)
+            if fit <= max_fit:
+                break
+
+        return (indiv, fit)
+
     def gen_pop(self) -> tuple[ndarray, ndarray, ndarray]:
         pop = np.random.uniform(LIM_LOWER, LIM_UPPER, (POP_SIZE, self.n_weights))
-        prob_pop = np.random.uniform(0, 1, POP_SIZE)
         fit_pop = self.get_fitness(pop)
+        max_fit = 25
+        for i in range(POP_SIZE):
+            if fit_pop[i] > max_fit:
+                indiv, fit = self.gen_indiv(max_fit)
+                pop[i] = indiv
+                fit_pop[i] = fit
+        prob_pop = np.random.uniform(0, 1, POP_SIZE)
 
-        return (pop, fit_pop, prob_pop)
+        return (np.array(pop), fit_pop, prob_pop)
 
     def tournament(self, pop, fit_pop, prob_pop) -> tuple[ndarray, ndarray, ndarray]:
         """
@@ -293,12 +308,18 @@ class SpecializedEA():
 
     def run_generation(self):
         if self.env.solutions is None:
-            pop, fit_pop, prob_pop = self.gen_pop()
+            new_pop, new_fit_pop, new_prob_pop = self.gen_pop()
+            new_best_i = self.get_stable_best(new_pop, new_fit_pop)
+            self.last_best = new_pop[new_best_i]
+            self.last_best_fit = new_fit_pop[new_best_i]
+            self.last_best_prob = new_prob_pop[new_best_i]
+            self.best_fit_since_dooms = self.last_best_fit
+
             # self.check_fit_pop(pop, fit_pop)
         else:
             pop, fit_pop, prob_pop = self.env.solutions
 
-        new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
+            new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
 
         self.stats(new_fit_pop, new_prob_pop)
 
@@ -326,7 +347,7 @@ if __name__ == "__main__":
     i = 0
     if OVERRIDE:
         while True:
-            experiment_name = f"adaptative_ea_NEW_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+            experiment_name = f"adaptative_ea_bad_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
             if not os.path.exists(experiment_name):
                 print("i", i)
                 break
@@ -334,12 +355,12 @@ if __name__ == "__main__":
                 print("i=", i)
                 i += 1
 
-    experiment_name = f"adaptative_ea_NEW_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
+    experiment_name = f"adaptative_ea_bad_{i}-{ENEMY}-{POP_SIZE}-{DOOMSDAY_GENS}-{doomsday_str}-{min_mutation_str}-{TOURNAMENT_K}-{LOWER_CAUCHY}-{UPPER_CAUCHY}-{mutation_delta}"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
     with open(f"{experiment_name}/stats.csv", "w+") as f:
-        f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,std_prob,doomsday\n")
+        f.write("gen,best_fit,mean_fit,std_fit,best_prob,mean_prob,median_prob,std_prob,doomsday\n")
 
     with open(f"{experiment_name}/weights.csv", "w+") as f:
         f.write("")

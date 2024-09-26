@@ -1,15 +1,16 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-experiment_name = "adaptative_ea-3-100-20-250-010-5--2-2-015"
+experiment_name = "adaptative_ea_bad_0-3-100-20-333-010-5--2-2-010"
 df = pd.read_csv(f"{experiment_name}/stats.csv", delimiter=",", dtype=str).astype(float)
+
 enemy = experiment_name.split("-")[1]
 pop_size = experiment_name.split("-")[2]
 
 fig, ax_left = plt.subplots()
 ax_left.set_xlabel("iterations")
 ax_left.set_ylabel("fitness")
-lower = min(df["mean_fit"]) + 0.2*min(df["mean_fit"])
+# lower = min(df["mean_fit"]) + 0.2*min(df["mean_fit"])
 # ax_left.set_ylim([lower, 100])
 ax_right = ax_left.twinx()
 ax_right.set_ylabel("probability")
@@ -32,7 +33,7 @@ df["best_fit"].plot(ax=ax_left, legend=False, color="blue")
 
 
 ax_left.set_title(f"{type}, enemy={enemy}, n={pop_size}")
-df_prob.plot(ax=ax_right, legend=False, color="green", linewidth=0.75)
+df_prob.plot(ax=ax_right, legend=False, linewidth=0.75)
 
 doomsday_indices = df[df["doomsday"] == 1].index
 i = 0
