@@ -293,12 +293,15 @@ class SpecializedEA():
 
     def run_generation(self):
         if self.env.solutions is None:
-            pop, fit_pop, prob_pop = self.gen_pop()
-            # self.check_fit_pop(pop, fit_pop)
+            new_pop, new_fit_pop, new_prob_pop = self.gen_pop()
+            new_best_i = self.get_stable_best(new_pop, new_fit_pop)
+            self.last_best = new_pop[new_best_i]
+            self.last_best_fit = new_fit_pop[new_best_i]
+            self.last_best_prob = new_prob_pop[new_best_i]
+            self.best_fit_since_dooms = self.last_best_fit
         else:
             pop, fit_pop, prob_pop = self.env.solutions
-
-        new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
+            new_pop, new_fit_pop, new_prob_pop = self.evolve_pop(pop, fit_pop, prob_pop)
 
         self.stats(new_fit_pop, new_prob_pop)
 
