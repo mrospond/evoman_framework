@@ -1,5 +1,4 @@
 import os
-from urllib.response import addinfo
 
 from params import *
 import adaptative_ea_bad
@@ -27,7 +26,7 @@ def adaptative(run):
 
     ea = adaptative_ea_bad.SpecializedEA(experiment_name, ENEMY)
     for i in range(GENERATIONS):
-        print("\n\nNEW GENERATION")
+        print("\n\nNEW GENERATION:", i)
         ea.run_generation()
 
 
@@ -46,12 +45,11 @@ def decreasing(run):
 
     ea = decreasing_ea.SpecializedEA(experiment_name, ENEMY)
     for i in range(GENERATIONS):
-        print("\n\nNEW GENERATION")
+        print("\n\nNEW GENERATION:", i)
         ea.run_generation()
 
 if __name__ == "__main__":
 
-    results_dir = 'results'
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
