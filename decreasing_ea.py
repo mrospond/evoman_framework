@@ -247,7 +247,7 @@ class SpecializedEA():
         self.stats(new_fit_pop)
 
         self.env.update_solutions([new_pop, new_fit_pop])
-        self.env.save_state()
+        # self.env.save_state()
 
         self.gen += 1
         self.mutation_prob = min(MAX_CROSSOVER-MIN_MUTATION, max(MIN_MUTATION, self.mutation_prob - MUTATION_DELTA))

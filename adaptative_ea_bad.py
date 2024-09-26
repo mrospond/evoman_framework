@@ -287,7 +287,7 @@ class SpecializedEA():
         self.stats(new_fit_pop, new_prob_pop)
 
         self.env.update_solutions([new_pop, new_fit_pop, new_prob_pop])
-        self.env.save_state()
+        # self.env.save_state()
 
         self.gen += 1
 
