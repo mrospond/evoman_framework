@@ -57,7 +57,7 @@ def plot_stats(stats: dict, enemy: int):
     std_median_prob = median_prob_df.std(axis=0)
 
     generations = range(len(avg_best_fit))  # all experiments should have the same number of generations
-    
+
     def plot_plot():
 
         fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -145,12 +145,12 @@ def save_best_individual(stats: dict, save_path: str):
     with open(save_path, 'w') as file:
         for weight in best_weights:
             file.write(f"{weight}\n")
-    
+
     print(f"Best fitness from generation: {best_fitness_gen}, valued: {best_fitness_value} weights saved to {save_path}")
 
     print (best_info)
 
-def calculate_gain(weights_file_path: str, enemies: list) -> dict:
+def calculate_gain(ea_kind: str, enemies: list) -> dict:
     """
     read weights from weights_file_path, then run 5 experiments and calculate gain
     return list with gain for n runs as well as corresponding enemy
@@ -162,12 +162,14 @@ def calculate_gain(weights_file_path: str, enemies: list) -> dict:
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
-    with open(weights_file_path, "r") as f:
-        lines = f.readlines()
-        best_ind = np.array([float(line.strip()) for line in lines if line.strip()])
 
     all_gains_dict = {}
     for enemy in enemies:
+        weights_file_path = f"{ea_kind}/fittest_weights_{enemy}"
+        with open(weights_file_path, "r") as f:
+            lines = f.readlines()
+            best_ind = np.array([float(line.strip()) for line in lines if line.strip()])
+
         gains_list = []
         print(weights_file_path.split('/')[1], "\n\n\nn\n")
 
@@ -180,9 +182,9 @@ def calculate_gain(weights_file_path: str, enemies: list) -> dict:
             gains_list.append(playerlife - enemylife)
             print(ea.env.play(pcont=best_ind))
 
-            all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')}\nE{enemy}"] = gains_list
-        ea=''
-    
+        all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')}\nE{enemy}"] = gains_list
+        # ea=''
+
 
     return all_gains_dict
 
@@ -202,7 +204,7 @@ def save_box_plot(all_gains_dict: dict):
     _, ax = plt.subplots()
     ax.set_ylabel('Gain', fontsize=20)
     ax.set_title('Gain for each EA and enemy', fontsize=20)
-    
+
 
     bplot = ax.boxplot(gains,
                     patch_artist=True,
@@ -218,12 +220,12 @@ def save_box_plot(all_gains_dict: dict):
 
 
 if __name__ == "__main__":
-    
+
     dir_adaptative = "results/adaptative_ea_bad"
     dir_decreasing = "results/decreasing_ea"
     enemies=[2, 7, 8]
 
-   
+
 
     for enemy in enemies:
          # where to save weights
@@ -244,8 +246,8 @@ if __name__ == "__main__":
 
 
 #####
-    gains_dict_adaptative = calculate_gain(experiment_name_adaptative, enemies)
-    gains_dict_decreasing = calculate_gain(experiment_name_decreasing, enemies)
+    gains_dict_adaptative = calculate_gain(dir_adaptative, enemies)
+    gains_dict_decreasing = calculate_gain(dir_decreasing, enemies)
 
     all_gains_dict = gains_dict_adaptative | gains_dict_decreasing
 
@@ -255,4 +257,3 @@ if __name__ == "__main__":
     print(all_gains_dict)
     print("OK")
     save_box_plot(dict(sorted(all_gains_dict.items(), key=lambda x: int(x[0].split('E')[-1]))))
- 
