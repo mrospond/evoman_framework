@@ -37,7 +37,12 @@ def plot_stats(stats: dict, enemy: int):
     for _, df in stats.items():
         all_best_fit.append(df['best_fit'])
         all_mean_fit.append(df['mean_fit'])
-        all_median_prob.append(df['median_prob'] * 100)
+        if 'median_prob' in df.columns:
+            all_median_prob.append(df['median_prob'] * 100)
+        elif 'prob' in df.columns:
+            all_median_prob.append(df['prob'] * 100)
+        else:
+            raise Exception("whoops")
     
     best_fit_df = pd.DataFrame(all_best_fit)
     mean_fit_df = pd.DataFrame(all_mean_fit)
@@ -55,20 +60,25 @@ def plot_stats(stats: dict, enemy: int):
     
     def plot_plot():
         plt.figure(figsize=(10, 6))
-        plt.plot(generations, avg_best_fit, label='Average Best Fitness', color='blue', linestyle='-',)
+        plt.plot(generations, avg_best_fit, label='Av. Best Fitness', color='blue', linestyle='-',)
         plt.fill_between(generations, avg_best_fit - std_best_fit, avg_best_fit + std_best_fit, color='blue', alpha=0.2)
-        plt.plot(generations, avg_mean_fit, label='Average Mean Fitness', color='green', linestyle='-')
+        plt.plot(generations, avg_mean_fit, label='Av. Mean Fitness', color='green', linestyle='-')
         plt.fill_between(generations, avg_mean_fit - std_mean_fit, avg_mean_fit + std_mean_fit, color='green', alpha=0.2)
-        plt.plot(generations, avg_median_prob, label='Average Median Probability', color='red', linestyle='-')
+        plt.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', linestyle='-')
         plt.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
-        
 
-        plt.title(f'Average fitness in 10 runs of EA1 for Enemy {enemy}')
-        plt.xlabel('Generation')
-        plt.ylabel('Fitness')
+        # ax2 = plt.gca().twinx()
+        # ax2.set_ylabel('Percentage', fontsize=20)  # Set title for the right y-axis
+        # ax2.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', linestyle='-')
+        # ax2.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
+        
+        plt.title(f'Average fitness in 10 runs of EA1 for Enemy {enemy}', fontsize=20)
+        plt.xlabel('Generation', fontsize=20)
+        plt.ylabel('Fitness', fontsize=20)
         plt.legend(
-            loc='lower left', bbox_to_anchor=(0.5, 0.2),
-            fontsize=12,
+            loc='lower left',
+            bbox_to_anchor=(0.5, 0.2),
+            fontsize=16,
             markerscale=2,
             # handlelength=3,
             # handleheight=2, #legend
@@ -77,6 +87,8 @@ def plot_stats(stats: dict, enemy: int):
             # shadow=True,
         )
         plt.grid(True)
+        plt.tight_layout()
+
         plot_name = os.path.basename(next(iter(stats)))[:-2]
         plt.savefig(os.path.join(save_path, plot_name))
         print("saved " + plot_name)
@@ -163,7 +175,7 @@ def calculate_gain(weights_file_path: str, enemies: list) -> dict:
             print(ea.env.play(pcont=best_ind))
 
             
-            all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')} E{enemy}"] = gains_list
+            all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')}\nE{enemy}"] = gains_list
     
 
     return all_gains_dict
@@ -182,7 +194,9 @@ def save_box_plot(all_gains_dict: dict):
     print(len(colors))
 
     _, ax = plt.subplots()
-    ax.set_ylabel('Gain')
+    ax.set_ylabel('Gain', fontsize=20)
+    ax.set_title('Gain for each EA and enemy', fontsize=20)
+    
 
     bplot = ax.boxplot(gains,
                     patch_artist=True,
@@ -191,6 +205,7 @@ def save_box_plot(all_gains_dict: dict):
 
     for patch, color in zip(bplot['boxes'], colors):
         patch.set_facecolor(color)
+    plt.tight_layout()
 
     plt.savefig("results/plots/box-plot")
     print("saved box_plot")
@@ -200,7 +215,7 @@ if __name__ == "__main__":
     
     dir_adaptative = "results/adaptative_ea_bad"
     dir_decreasing = "results/decreasing_ea"
-    enemies=[7, 8]
+    enemies=[2, 7, 8]
 
    
 
@@ -213,7 +228,7 @@ if __name__ == "__main__":
         stats_decreasing = read_stats(dir_decreasing, f"{os.path.basename(dir_decreasing)}-{enemy}")
         print("OK")
 
-        # plot_stats(stats_adaptative, enemy)
+        plot_stats(stats_adaptative, enemy)
         plot_stats(stats_decreasing, enemy)
         print("OK")
 
@@ -234,5 +249,5 @@ if __name__ == "__main__":
 
     print(all_gains_dict)
     print("OK")
-    save_box_plot(all_gains_dict)
+    save_box_plot(dict(sorted(all_gains_dict.items(), key=lambda x: int(x[0].split('E')[-1]))))
  
