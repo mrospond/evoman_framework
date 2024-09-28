@@ -59,35 +59,41 @@ def plot_stats(stats: dict, enemy: int):
     generations = range(len(avg_best_fit))  # all experiments should have the same number of generations
     
     def plot_plot():
-        plt.figure(figsize=(10, 6))
-        plt.plot(generations, avg_best_fit, label='Av. Best Fitness', color='blue', linestyle='-',)
-        plt.fill_between(generations, avg_best_fit - std_best_fit, avg_best_fit + std_best_fit, color='blue', alpha=0.2)
-        plt.plot(generations, avg_mean_fit, label='Av. Mean Fitness', color='green', linestyle='-')
-        plt.fill_between(generations, avg_mean_fit - std_mean_fit, avg_mean_fit + std_mean_fit, color='green', alpha=0.2)
-        plt.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', linestyle='-')
-        plt.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
 
-        # ax2 = plt.gca().twinx()
-        # ax2.set_ylabel('Percentage', fontsize=20)  # Set title for the right y-axis
-        # ax2.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', linestyle='-')
-        # ax2.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
-        
-        plt.title(f'Average fitness in 10 runs of EA1 for Enemy {enemy}', fontsize=20)
-        plt.xlabel('Generation', fontsize=20)
-        plt.ylabel('Fitness', fontsize=20)
-        plt.legend(
-            loc='lower left',
-            bbox_to_anchor=(0.5, 0.2),
-            fontsize=16,
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        ax1.plot(generations, avg_best_fit, label='Av. Best Fitness', color='blue', lw=1)
+        ax1.fill_between(generations, avg_best_fit - std_best_fit, avg_best_fit + std_best_fit, color='blue', alpha=0.2)
+        ax1.plot(generations, avg_mean_fit, label='Av. Mean Fitness', color='green')
+        ax1.fill_between(generations, avg_mean_fit - std_mean_fit, avg_mean_fit + std_mean_fit, color='green', alpha=0.2)
+        ax1.set_xlabel('Generation', fontsize=20)
+        ax1.set_ylabel('Fitness', fontsize=20)
+
+        ax2 = ax1.twinx()
+        ax2.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', lw=1)
+        ax2.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
+        ax2.set_ylabel("Mutation Probability (%)", fontsize=20)
+        ax2.set_ylim(ax1.get_ylim())
+
+        fig.suptitle(f'Average fitness in 10 runs of EA1 for Enemy {enemy}', fontsize=20)
+        fig.autofmt_xdate()
+
+        fig.legend(
+            loc='lower left', bbox_to_anchor=(0.55, 0.255),
+            fontsize=14,
             markerscale=2,
             # handlelength=3,
             # handleheight=2, #legend
-            borderpad=1.5, # Padding between the legend border and content
+            # borderpad=1.5, # Padding between the legend border and content
             # frameon=False,
             # shadow=True,
+            # bbox_transform=ax1.transAxes,
+            framealpha=1
         )
-        plt.grid(True)
-        plt.tight_layout()
+
+        ax1.grid(True)
+        # plt.grid(True)
+        fig.tight_layout()
 
         plot_name = os.path.basename(next(iter(stats)))[:-2]
         plt.savefig(os.path.join(save_path, plot_name))
@@ -132,7 +138,7 @@ def save_best_individual(stats: dict, save_path: str):
         'Best Fitness Value': best_fitness_value,
         'Generation Number': best_fitness_gen,
         'Subdirectory': best_fitness_subdir,
-        'Weights': best_weights
+        # 'Weights': best_weights
     }
 
     # Output the best fitness information to a file
@@ -142,7 +148,7 @@ def save_best_individual(stats: dict, save_path: str):
     
     print(f"Best fitness from generation: {best_fitness_gen}, valued: {best_fitness_value} weights saved to {save_path}")
 
-    return best_info
+    print (best_info)
 
 def calculate_gain(weights_file_path: str, enemies: list) -> dict:
     """
@@ -151,10 +157,10 @@ def calculate_gain(weights_file_path: str, enemies: list) -> dict:
     """
     runs = 5
 
-    # if not os.path.exists(experiment_name):
-    #     raise Exception(experiment_name + " file doesnt exist!")
 
-    #get dir with best weight
+    experiment_name="test_experiment"
+    if not os.path.exists(experiment_name):
+        os.makedirs(experiment_name)
 
     with open(weights_file_path, "r") as f:
         lines = f.readlines()
@@ -163,19 +169,19 @@ def calculate_gain(weights_file_path: str, enemies: list) -> dict:
     all_gains_dict = {}
     for enemy in enemies:
         gains_list = []
-        experiment_name="test_experiment"
-        if not os.path.exists(experiment_name):
-            os.makedirs(experiment_name)
+        print(weights_file_path.split('/')[1], "\n\n\nn\n")
 
-        ea = adaptative_ea_bad.SpecializedEA(experiment_name, enemy)
-
+        if weights_file_path.split('/')[1] == "adaptative_ea_bad":
+            ea = adaptative_ea_bad.SpecializedEA(experiment_name, enemy)
+        else:
+            ea = decreasing_ea.SpecializedEA(experiment_name, enemy)
         for _ in range(runs):
             fitness, playerlife, enemylife, time = ea.env.play(pcont=best_ind)
             gains_list.append(playerlife - enemylife)
             print(ea.env.play(pcont=best_ind))
 
-            
             all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')}\nE{enemy}"] = gains_list
+        ea=''
     
 
     return all_gains_dict
@@ -237,8 +243,6 @@ if __name__ == "__main__":
         print("OK")
 
 
-
-
 #####
     gains_dict_adaptative = calculate_gain(experiment_name_adaptative, enemies)
     gains_dict_decreasing = calculate_gain(experiment_name_decreasing, enemies)
@@ -246,6 +250,7 @@ if __name__ == "__main__":
     all_gains_dict = gains_dict_adaptative | gains_dict_decreasing
 
     print(all_gains_dict.keys())
+    print(all_gains_dict.items())
 
     print(all_gains_dict)
     print("OK")
