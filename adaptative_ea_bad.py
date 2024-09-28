@@ -258,6 +258,10 @@ class SpecializedEA():
         with open(f"{self.env.experiment_name}/weights.csv", "a+") as f:
             f.write(",".join([str(w) for w in self.last_best]) + "\n")
 
+        if SAVE_HEALTH:
+            with open(f"{self.env.experiment_name}/health.csv", "a+") as f:
+                f.write(f"{self.gen},{self.env.get_enemylife()},{self.env.get_playerlife()}\n")
+
     def check_fit_pop(self, pop, fit_pop):
         new_fit1 = self.get_fitness(pop)
         new_fit2 = self.get_fitness(pop)  # SANITY CHECK
@@ -326,6 +330,11 @@ if __name__ == "__main__":
 
     with open(f"{experiment_name}/weights.csv", "w+") as f:
         f.write("")
+
+    if SAVE_HEALTH:
+        with open(f"{experiment_name}/health.csv", "w+") as f:
+            f.write("gen,enemy_life,player_life\n")
+
 
     ea = SpecializedEA(experiment_name, ENEMY)
     for i in range(GENERATIONS):
