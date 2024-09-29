@@ -337,10 +337,11 @@ if __name__ == "__main__":
 
 
     ea = SpecializedEA(experiment_name, ENEMY)
-    for i in range(GENERATIONS):
-        print("\n\nNEW GENERATION")
-        ea.run_generation()
-        if i % 10 == 0:
-            ea.show_best()
+    print(ea.n_weights)
+    # for i in range(GENERATIONS):
+    #     print("\n\nNEW GENERATION")
+    #     ea.run_generation()
+    #     if i % 10 == 0:
+    #         ea.show_best()
 
-    ea.show_best()
+    # ea.show_best()
