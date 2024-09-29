@@ -95,7 +95,7 @@ def plot_stats(stats_adaptative: dict, stats_decreasing: dict, enemy: int):
         ax1.fill_between(generations, avg_best_fit_ad - std_best_fit_ad, avg_best_fit_ad + std_best_fit_ad, color='blue', alpha=0.2)
         ax1.plot(generations, avg_mean_fit_ad, label='mean fitness adaptive', color='green', lw=1)
         ax1.fill_between(generations, avg_mean_fit_ad - std_mean_fit_ad, avg_mean_fit_ad + std_mean_fit_ad, color='green', alpha=0.2)
-        ax2.plot(generations, avg_median_prob_ad, label='median probability Adaptive', color='red', lw=1)
+        ax2.plot(generations, avg_median_prob_ad, label='median probability adaptive', color='red', lw=1)
         ax2.fill_between(generations, avg_median_prob_ad - std_median_prob_ad, avg_median_prob_ad + std_median_prob_ad, color='red', alpha=0.2)
 
         # decreasing
