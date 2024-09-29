@@ -54,7 +54,7 @@ if __name__ == "__main__":
         os.makedirs(results_dir)
 
     # TODO: set max_workers, my cpu has 8 cores, so 5 processes at a time, to save some for the OS,
-    #  and even if i set it to 8, 10 runs will still require 2 executions of this script (first 8 workers, then 2)
+    #  and even if i set it to 8, 10 runs will still take about the same time (first 8 workers, then 2 workers)
     max_workers = 5
 
     # adaptative()
