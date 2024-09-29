@@ -21,81 +21,104 @@ def read_stats(base_dir: str, prefix: str) -> dict:
                         print(e)
     return stats
 
-
-def plot_stats(stats: dict, enemy: int):
-
-    print("TEST")
-
+def plot_stats(stats_adaptative: dict, stats_decreasing: dict, enemy: int):
+    
     save_path = "results/plots/"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    all_best_fit=[]
-    all_mean_fit=[]
-    all_median_prob=[]
+    # adaptive EA data
+    all_best_fit_ad = []
+    all_mean_fit_ad = []
+    all_median_prob_ad = []
 
-    for _, df in stats.items():
-        all_best_fit.append(df['best_fit'])
-        all_mean_fit.append(df['mean_fit'])
+    for _, df in stats_adaptative.items():
+        all_best_fit_ad.append(df['best_fit'])
+        all_mean_fit_ad.append(df['mean_fit'])
         if 'median_prob' in df.columns:
-            all_median_prob.append(df['median_prob'] * 100)
+            all_median_prob_ad.append(df['median_prob'] * 100)
         elif 'prob' in df.columns:
-            all_median_prob.append(df['prob'] * 100)
+            all_median_prob_ad.append(df['prob'] * 100)
         else:
             raise Exception("whoops")
-    
-    best_fit_df = pd.DataFrame(all_best_fit)
-    mean_fit_df = pd.DataFrame(all_mean_fit)
-    median_prob_df = pd.DataFrame(all_median_prob)
 
-    avg_best_fit = best_fit_df.mean(axis=0)
-    avg_mean_fit = mean_fit_df.mean(axis=0)
-    avg_median_prob = median_prob_df.mean(axis=0)
+    best_fit_df_ad = pd.DataFrame(all_best_fit_ad)
+    mean_fit_df_ad = pd.DataFrame(all_mean_fit_ad)
+    median_prob_df_ad = pd.DataFrame(all_median_prob_ad)
 
-    std_best_fit = best_fit_df.std(axis=0)
-    std_mean_fit = mean_fit_df.std(axis=0)
-    std_median_prob = median_prob_df.std(axis=0)
+    avg_best_fit_ad = best_fit_df_ad.mean(axis=0)
+    avg_mean_fit_ad = mean_fit_df_ad.mean(axis=0)
+    avg_median_prob_ad = median_prob_df_ad.mean(axis=0)
 
-    generations = range(len(avg_best_fit))  # all experiments should have the same number of generations
+    std_best_fit_ad = best_fit_df_ad.std(axis=0)
+    std_mean_fit_ad = mean_fit_df_ad.std(axis=0)
+    std_median_prob_ad = median_prob_df_ad.std(axis=0)
+    generations = range(len(avg_best_fit_ad))
+
+    # decreasing EA data
+    all_best_fit_de = []
+    all_mean_fit_de = []
+    all_median_prob_de = []
+
+    for _, df in stats_decreasing.items():
+        all_best_fit_de.append(df['best_fit'])
+        all_mean_fit_de.append(df['mean_fit'])
+        if 'median_prob' in df.columns:
+            all_median_prob_de.append(df['median_prob'] * 100)
+        elif 'prob' in df.columns:
+            all_median_prob_de.append(df['prob'] * 100)
+        else:
+            raise Exception("whoops")
+
+    best_fit_df_de = pd.DataFrame(all_best_fit_de)
+    mean_fit_df_de = pd.DataFrame(all_mean_fit_de)
+    median_prob_df_de = pd.DataFrame(all_median_prob_de)
+
+    avg_best_fit_de = best_fit_df_de.mean(axis=0)
+    avg_mean_fit_de = mean_fit_df_de.mean(axis=0)
+    avg_median_prob_de = median_prob_df_de.mean(axis=0)
+
+    std_best_fit_de = best_fit_df_de.std(axis=0)
+    std_mean_fit_de = mean_fit_df_de.std(axis=0)
+    std_median_prob_de = median_prob_df_de.std(axis=0)
 
     def plot_plot():
-
         fig, ax1 = plt.subplots(figsize=(10, 6))
-
-        ax1.plot(generations, avg_best_fit, label='Av. Best Fitness', color='blue', lw=1)
-        ax1.fill_between(generations, avg_best_fit - std_best_fit, avg_best_fit + std_best_fit, color='blue', alpha=0.2)
-        ax1.plot(generations, avg_mean_fit, label='Av. Mean Fitness', color='green')
-        ax1.fill_between(generations, avg_mean_fit - std_mean_fit, avg_mean_fit + std_mean_fit, color='green', alpha=0.2)
-        ax1.set_xlabel('Generation', fontsize=20)
-        ax1.set_ylabel('Fitness', fontsize=20)
-
         ax2 = ax1.twinx()
-        ax2.plot(generations, avg_median_prob, label='Av. Median Probability', color='red', lw=1)
-        ax2.fill_between(generations, avg_median_prob - std_median_prob, avg_median_prob + std_median_prob, color='red', alpha=0.2)
-        ax2.set_ylabel("Mutation Probability (%)", fontsize=20)
-        ax2.set_ylim(ax1.get_ylim())
+        ax1.set_xlabel('Generation', fontsize=16)
+        ax1.set_ylabel('Fitness', fontsize=16)
+        ax2.set_ylabel("Mutation probability (%)", fontsize=16)
+        fig.suptitle(f'Average fitness in a EA run for E{enemy}', fontsize=18)
 
-        fig.suptitle(f'Average fitness in 10 runs of EA1 for Enemy {enemy}', fontsize=20)
+        # adaptative
+        ax1.plot(generations, avg_best_fit_ad, label='best fitness adaptive', color='blue', lw=1)
+        ax1.fill_between(generations, avg_best_fit_ad - std_best_fit_ad, avg_best_fit_ad + std_best_fit_ad, color='blue', alpha=0.2)
+        ax1.plot(generations, avg_mean_fit_ad, label='mean fitness adaptive', color='green', lw=1)
+        ax1.fill_between(generations, avg_mean_fit_ad - std_mean_fit_ad, avg_mean_fit_ad + std_mean_fit_ad, color='green', alpha=0.2)
+        ax2.plot(generations, avg_median_prob_ad, label='median probability Adaptive', color='red', lw=1)
+        ax2.fill_between(generations, avg_median_prob_ad - std_median_prob_ad, avg_median_prob_ad + std_median_prob_ad, color='red', alpha=0.2)
+
+        # decreasing
+        ax1.plot(generations, avg_best_fit_de, label='best fitness decreasing', color='blue', lw=1, linestyle='--')
+        ax1.fill_between(generations, avg_best_fit_de - std_best_fit_de, avg_best_fit_de + std_best_fit_de, color='blue', alpha=0.2)
+        ax1.plot(generations, avg_mean_fit_de, label='mean fitness decreasing', color='green', lw=1, linestyle='--')
+        ax1.fill_between(generations, avg_mean_fit_de - std_mean_fit_de, avg_mean_fit_de + std_mean_fit_de, color='green', alpha=0.2)
+        ax2.plot(generations, avg_median_prob_de, label='median probability decreasing', color='red', lw=1, linestyle='--')
+        ax2.fill_between(generations, avg_median_prob_de - std_median_prob_de, avg_median_prob_de + std_median_prob_de, color='red', alpha=0.2)
+
         fig.autofmt_xdate()
-
         fig.legend(
-            loc='lower left', bbox_to_anchor=(0.55, 0.255),
-            fontsize=14,
+            loc='lower left', bbox_to_anchor=(0.56, 0.255),
+            fontsize=13,
             markerscale=2,
-            # handlelength=3,
-            # handleheight=2, #legend
-            # borderpad=1.5, # Padding between the legend border and content
-            # frameon=False,
-            # shadow=True,
-            # bbox_transform=ax1.transAxes,
             framealpha=1
         )
 
         ax1.grid(True)
-        # plt.grid(True)
+        ax2.set_ylim(ax1.get_ylim())
         fig.tight_layout()
 
-        plot_name = os.path.basename(next(iter(stats)))[:-2]
+        plot_name = f"enemy-{enemy}"
         plt.savefig(os.path.join(save_path, plot_name))
         print("saved " + plot_name)
 
@@ -171,18 +194,19 @@ def calculate_gain(ea_kind: str, enemies: list) -> dict:
             best_ind = np.array([float(line.strip()) for line in lines if line.strip()])
 
         gains_list = []
-        print(weights_file_path.split('/')[1], "\n\n\nn\n")
+        # print(weights_file_path.split('/')[1], "\n\n\nn\n")
 
         if weights_file_path.split('/')[1] == "adaptative_ea_bad":
             ea = adaptative_ea_bad.SpecializedEA(experiment_name, enemy)
         else:
             ea = decreasing_ea.SpecializedEA(experiment_name, enemy)
+        print(f"{ea_kind}, enemy: {enemy}\n",)
         for _ in range(runs):
             fitness, playerlife, enemylife, time = ea.env.play(pcont=best_ind)
             gains_list.append(playerlife - enemylife)
             print(ea.env.play(pcont=best_ind))
 
-        all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '')}\nE{enemy}"] = gains_list
+        all_gains_dict[f"{weights_file_path.split('/')[1].replace('_ea', '').replace('_bad', '').replace('adaptative','adaptive')} E{enemy}"] = gains_list
         # ea=''
 
 
@@ -201,9 +225,10 @@ def save_box_plot(all_gains_dict: dict):
 
     print(len(colors))
 
-    _, ax = plt.subplots()
-    ax.set_ylabel('Gain', fontsize=20)
-    ax.set_title('Gain for each EA and enemy', fontsize=20)
+    fig, ax = plt.subplots()
+    ax.set_ylabel('Individual gain', fontsize=16)
+    ax.set_xlabel('Experiment name', fontsize=16)
+    ax.set_title('Mean individual gain of best performing\nindividual in adaptive and decreasing EA', fontsize=16)
 
 
     bplot = ax.boxplot(gains,
@@ -214,6 +239,8 @@ def save_box_plot(all_gains_dict: dict):
     for patch, color in zip(bplot['boxes'], colors):
         patch.set_facecolor(color)
     plt.tight_layout()
+    fig.autofmt_xdate()
+
 
     plt.savefig("results/plots/box-plot")
     print("saved box_plot")
@@ -236,8 +263,7 @@ if __name__ == "__main__":
         stats_decreasing = read_stats(dir_decreasing, f"{os.path.basename(dir_decreasing)}-{enemy}")
         print("OK")
 
-        plot_stats(stats_adaptative, enemy)
-        plot_stats(stats_decreasing, enemy)
+        plot_stats(stats_adaptative, stats_decreasing, enemy)
         print("OK")
 
         save_best_individual(stats_adaptative, experiment_name_adaptative)
