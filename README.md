@@ -9,6 +9,6 @@ Team 113: Alexandre Baudry, Meret Baumgartner, Genhao Li, Marek Rospond
 To **reproduce** the results in the report, update variable `ENEMY` to 2, 7 and 8 in `params.py`, 
 and run `results_for_report_parallel.py` respectively.
 
-To **plot** the results, run `results_ass1.py`.
+To **plot** the results, run `results_asg1.py`.
 
 Training stats, weights and plots are all save in `./results/`.
