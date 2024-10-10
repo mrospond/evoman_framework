@@ -5,9 +5,9 @@ import adaptative_ea_generalist, adaptative_ea_bad
 
 RESULTS_DIR_NAME="results/asg2"
 
-def gain_4_all(weights_lines: list) -> dict:
+def gain_4_all(weights_lines: list) -> tuple:
     """
-    returns game results for all enemies
+    returns game results against all enemies
     """
     enemies = [x for x in range(1,9)]
 
@@ -18,9 +18,9 @@ def gain_4_all(weights_lines: list) -> dict:
 
     return (fitness, playerlife, enemylife, time)
 
-def gain_4_single(weights_lines: list) -> float:
+def gain_4_single(weights_lines: list) -> dict:
     """
-    returns gain for a single enemy
+    returns gain for each enemy
     """
     enemies = [x for x in range(1,9)]
 
@@ -56,10 +56,10 @@ def plot_gain_against_each(gain_dict: dict):
     ax.bar(labels, gains, color=colors)
 
     plt.tight_layout()
-    fig.autofmt_xdate()
+    # fig.autofmt_xdate()
 
-    plt.savefig(os.path.join(RESULTS_DIR_NAME, "each_gain.png"))
-    print("Saved plot as 'each_gain.png'")  
+    plt.savefig(os.path.join(RESULTS_DIR_NAME, "gain_each.png"))
+    print("Saved plot as 'gain_each.png'")  
 
 
 if __name__== "__main__":
