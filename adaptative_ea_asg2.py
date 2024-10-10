@@ -13,20 +13,9 @@ N_HIDDEN_NEURONS = 10
 
 
 class SpecializedEA():
-    def __init__(self, experiment_name, enemies: list) -> None:
-        self.env = Environment(
-            enemies=enemies,
-            multiplemode="yes",
-            playermode="ai",
-            player_controller=player_controller(N_HIDDEN_NEURONS),
-            enemymode="static",
-            level=2,
-            speed="fastest",
-            visuals=False,
-            experiment_name=experiment_name,
-            contacthurt="player" # do not change
-        )
-
+    def __init__(self, environment: Environment, experiment_name, enemies: list) -> None:
+        self.env = environment
+        self.env.enemies = enemies
         self.n_weights = (self.env.get_num_sensors()+1)*N_HIDDEN_NEURONS + (N_HIDDEN_NEURONS+1)*5
         self.gen = 0
         self.last_best = None
