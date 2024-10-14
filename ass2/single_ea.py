@@ -157,7 +157,7 @@ class SingleEA():
         migrant_is = random.sample(range(len(self.pop)), NUM_MIGRATION)
         migrants = np.zeros((0, self.n_weights))
         for i in migrant_is:
-            migrant_is = np.vstack((migrant_is, self.pop[i]))
+            migrants = np.vstack((migrants, self.pop[i]))
 
         return migrants
 
