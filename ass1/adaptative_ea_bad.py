@@ -122,7 +122,7 @@ class SpecializedEA():
         for i in range(self.n_weights):
             if random.uniform(0, 1) <= mutation_prob:
                 delta = self.sample_cauchy(-2, 2)
-                new_val = LOWER_CAUCHY + (child[i]+delta + LOWER_CAUCHY) % 4  # wraparound in range [-2, 2]
+                new_val = LIM_LOWER + (child[i]+delta + LIM_LOWER) % 2  # wraparound in range [-1, 1]
                 child[i] = min(LIM_UPPER, max(LIM_LOWER, new_val))
 
         # Mutate mutation probability
