@@ -6,6 +6,7 @@ import random
 import global_params
 
 from global_params import *
+from numpy import ndarray
 from single_ea import SingleEA
 
 
@@ -40,6 +41,27 @@ class ComplexEA():
         # TODO: think of a title
         self.gen = 0
         self.EAs: list[SingleEA] = None
+        self.generalist_EA = SingleEA(
+            id=-1,
+            experiment_name=self.experiment_name,
+            enemies=[1,2,3,4,5,6,7,8],
+            pop_size=0,
+            pop=np.array([])
+        )
+
+    def save_best_generalist(self, pop: ndarray) -> None:
+        """
+        Returns individuals from pop that performs best for all 8 enemies.
+        """
+        self.generalist_EA.pop = pop
+        pop_fit = self.generalist_EA.get_fitness(pop)
+
+        best_i = np.argmax(pop_fit)
+        best_weights = pop[best_i]
+        best_fitness = pop_fit[best_i]
+
+        with open(f"{self.experiment_name}/weights.csv", "a") as f:
+            f.write(str(best_fitness) + "," + ",".join([str(w) for w in best_weights]) + "\n")
 
     def run_generation(self) -> None:
         if self.gen == 0:
@@ -82,16 +104,30 @@ class ComplexEA():
 
             self.EAs = new_EAs
 
+        pop_all = np.zeros((0, self.EAs[0].n_weights))
         for ea in self.EAs:
             ea.run_generation()
+
+            pop_all = np.vstack((pop_all, ea.pop))
+
             # TODO: get best individual?
-            if ea.communicates and ea.gen % EPOCH == 0:  # migration
-                # TODO: migration
-                pass
+            if ea.communicates and ea.gen > 0 and ea.gen % EPOCH == 0:  # migration
+                migrants = np.zeros((0, self.EAs[0].n_weights))
+                for ea in self.EAs:
+                    migrants = ea.emigration()
+                    # Copy migrants into other EAs
+                    for immi_ea in self.EAs:
+                        if ea.id == immi_ea.id:
+                            continue
+                        immi_ea.immigration(migrants)
+
+        if self.gen % SAVE_GENERALIST == 0:
+            self.save_best_generalist(pop_all)
 
         self.gen += 1
 
 if __name__ == "__main__":
+    SAVE_GENERALIST = 1
     complex_ea = ComplexEA("firsttry", ENEMIES)
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()
