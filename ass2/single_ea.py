@@ -37,7 +37,7 @@ class SingleEA():
         if pop is None:
             (self.pop, self.pop_fit) = self.gen_pop(self.pop_size)
         else:
-            assert len(pop) == self.pop_size
+            # assert len(pop) == self.pop_size TODO
             self.pop = pop
             self.pop_fit = self.get_fitness(pop)
 
@@ -58,22 +58,35 @@ class SingleEA():
 
         return (np.array(pop), fit_pop)
 
-    def parent_selection(self) -> tuple[ndarray, ndarray]:
+    def parent_selection(self) -> ndarray:
         """
         TODO: decide on parent selection method.
+        Tournament with k=2.
         Sample: no replacement
         """
-        parent_indeces = random.sample(range(len(self.pop)), 2)
-        return (self.pop[parent_indeces[1]], self.pop[parent_indeces[1]])
+        sample = random.sample(range(len(self.pop)), TOURNAMENT_K)  # generate indexes of sampled individuals
+
+        best_fit = self.pop_fit[sample[0]]
+        best_i = sample[0]
+        for i in sample:
+            if self.pop_fit[i] > best_fit:
+                best_fit = self.pop_fit[i]
+                best_i = i
+
+        return self.pop[best_i]
 
     def recombination(self, p1: ndarray, p2: ndarray) -> tuple[ndarray, ndarray]:
         """
         TODO: decide on recombination method.
+        n-point crossover with n=2.
         """
         if random.uniform(0, 1) <= CROSSOVER_PROB:  # TODO: for pair or indiv?
-            c1 = np.copy(p1)
-            c2 = np.copy(p2)
-            # TODO
+            # Crossover points
+            cp1 = random.choice(range(len(p1)-1))
+            cp2 = random.choice(range(cp1+1, len(p1)))
+
+            c1 = np.append(np.copy(p1[0:cp1]), np.append(np.copy(p2[cp1:cp2]), np.copy(p1[cp2:])))
+            c2 = np.append(np.copy(p2[0:cp1]), np.append(np.copy(p1[cp1:cp2]), np.copy(p2[cp2:])))
         else:
             c1 = np.copy(p1)
             c2 = np.copy(p2)
@@ -81,16 +94,24 @@ class SingleEA():
         return (c1, c2)
 
     def mutation(self, indiv: ndarray) -> ndarray:
-        if random.uniform(0, 1) <= MUTATION_PROB:
-            # TODO: mutate
-            pass
+        """
+        Mutate the individual weights of indiv. For each weight, a new value is
+        generated that determines whether it will be mutated, and if so, a
+        new value from a TODO distribution is drawn.
+        """
+        for i in range(len(indiv)):
+            if random.uniform(0, 1) <= MUTATION_PROB:
+                delta = random.uniform(-2, 2)
+                new_val = LIM_LOWER + (indiv[i] + delta + LIM_LOWER) % (LIM_UPPER-LIM_LOWER)
+                indiv[i] = min(LIM_UPPER, max(LIM_LOWER, new_val))
 
         return indiv
 
     def reproduce(self):
         all_offspring_weights = np.empty((0, self.n_weights))
         for _ in range(0, POP_SIZE, 2):  # go by pairs of parents
-            p1, p2 = self.parent_selection()
+            p1 = self.parent_selection()
+            p2 = self.parent_selection()
 
             c1, c2 = self.recombination(p1, p2)
             c1 = self.mutation(c1)
@@ -167,4 +188,5 @@ class SingleEA():
         """
         for indiv in migrants:
             self.pop = np.vstack((self.pop, np.copy(indiv)))
-            self.pop_fit = np.vstack((self.pop_fit, self.get_fitness([indiv])))
+            self.pop_fit = np.append(self.pop_fit, self.get_fitness([indiv]))
+            assert len(self.pop) > 0

@@ -18,7 +18,7 @@ class ComplexEA():
         enemies_str = "".join([str(e) for e in enemies])
         i = 0
         while True:
-            experiment_name = f"{ea_name}_{i}-{enemies_str}"
+            experiment_name = f"{ea_name}-{enemies_str}_{i}"
             if not os.path.exists(experiment_name):
                 break
             else:
@@ -77,12 +77,16 @@ class ComplexEA():
                 pop_is = random.sample(range(len(pop)), POP_SIZE)
                 selected_pop = np.zeros((0, self.EAs[0].n_weights))
                 for i in pop_is:
-                    pop_is = np.vstack((selected_pop, pop[i]))
+                    selected_pop = np.vstack((selected_pop, pop[i]))
 
                 pop = selected_pop
 
             end_EA = SingleEA(
-                2, self.experiment_name, self.enemies, POP_SIZE, pop
+                id=2,
+                experiment_name=self.experiment_name,
+                enemies=self.enemies,
+                pop_size=POP_SIZE,
+                pop=pop
             )
             self.EAs = [end_EA]
         elif NUM_ISLANDS > 1 and self.gen == GENS_TOGETHER_START:
@@ -128,6 +132,6 @@ class ComplexEA():
 
 if __name__ == "__main__":
     SAVE_GENERALIST = 1
-    complex_ea = ComplexEA("firsttry", ENEMIES)
+    complex_ea = ComplexEA("paper", ENEMIES)
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()
