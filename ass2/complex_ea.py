@@ -11,8 +11,10 @@ from single_ea import SingleEA
 
 
 class ComplexEA():
-    def __init__(self, ea_name: str, enemies: list[int]) -> None:
+    def __init__(self, ea_name: str, enemies: list[int], mode: str) -> None:
         self.enemies = enemies
+        self.mode = mode.strip().lower()
+        assert self.mode == "random" or self.mode == "fit"
 
         # Create folder
         enemies_str = "".join([str(e) for e in enemies])
@@ -48,6 +50,35 @@ class ComplexEA():
             pop_size=0,
             pop=np.array([])
         )
+
+    def get_enemy_probs(self):
+        """
+        Returns a dictionary with the average inverse fitness (100-fit) of the last generation
+        of the current EA for each enemy in self.enemies, normalized so they all add up to 1.
+        """
+        pop = self.EAs[0].pop
+
+        inv_fit_dict = {}
+        for e in self.enemies:
+            ea = SingleEA(
+                id="temp",
+                experiment_name=self.experiment_name,
+                enemies=[e],
+                pop_size=len(pop),
+                pop=pop,
+                communicates=False,
+            )
+            avg_fit = np.average(ea.get_fitness(pop))
+            inv_fit_dict[e] = max(10, 100 - avg_fit)  # Try to avoid almost-zero probabilities
+
+        norm_dict = {}
+        for key, val in inv_fit_dict.items():
+            norm_dict[key] = val/np.sum(list(inv_fit_dict.values()))
+
+        with open(f"{self.experiment_name}/enemy_probs.json", "w+") as f:
+            json.dump(norm_dict, f)
+
+        return norm_dict
 
     def save_best_generalist(self, pop: ndarray) -> None:
         """
@@ -89,16 +120,24 @@ class ComplexEA():
             )
             self.EAs = [end_EA]
         elif NUM_ISLANDS > 1 and self.gen == GENS_TOGETHER_START:
+            island_enemies = []
+            if self.mode == "random":
+                for _ in range(NUM_ISLANDS):
+                    island_enemies.append(random.sample(self.enemies, NUM_ENEMIES))
+            elif self.mode == "fit":
+                enemy_probs = self.get_enemy_probs()
+                for _ in range(NUM_ISLANDS):
+                    island_enemies.append(np.random.choice(list(enemy_probs.keys()), NUM_ENEMIES, p=list(enemy_probs.values()), replace=False))
+
             new_EAs = []
             for i in range(NUM_ISLANDS):
-                ea_id = 10 + i
+                ea_id = 10 + i  # TODO: make more descriptive
                 pop_size = int(POP_SIZE / NUM_ISLANDS)
                 pop = self.EAs[0].pop[i*pop_size:(i+1)*pop_size]
-                ea_enemies = random.sample(self.enemies, NUM_ENEMIES)
                 ea = SingleEA(
                     id=ea_id,
                     experiment_name=self.experiment_name,
-                    enemies=ea_enemies,
+                    enemies=island_enemies[i],
                     pop_size=pop_size,
                     pop=pop,
                     communicates=True
@@ -132,8 +171,9 @@ class ComplexEA():
 
         self.gen += 1
 
+
 if __name__ == "__main__":
     SAVE_GENERALIST = 1
-    complex_ea = ComplexEA("paper", ENEMIES)
+    complex_ea = ComplexEA("fitnessBased", ENEMIES, "fit")
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()

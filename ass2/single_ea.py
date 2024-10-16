@@ -10,15 +10,20 @@ from global_params import *
 
 class SingleEA():
     def __init__(
-        self, id: int, experiment_name: str, enemies: list[int], pop_size: int,
+        self, id: str, experiment_name: str, enemies: list[int], pop_size: int,
         pop: ndarray | None = None, communicates: bool = False
     ) -> None:
         self.id = id
 
+        if len(enemies) > 1:
+            multiplemode = "yes"
+        else:
+            multiplemode = "no"
+
         self.env = Environment(
             experiment_name=experiment_name,
             enemies=enemies,
-            multiplemode="yes",
+            multiplemode=multiplemode,
             level=2,  # do not change
             playermode="ai",  # do not change
             enemymode="static",  # do not change
