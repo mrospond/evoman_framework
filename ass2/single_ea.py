@@ -101,7 +101,7 @@ class SingleEA():
         """
         for i in range(len(indiv)):
             if random.uniform(0, 1) <= MUTATION_PROB:
-                delta = random.uniform(-2, 2)
+                delta = random.gauss(0, 2/3)
                 new_val = LIM_LOWER + (indiv[i] + delta + LIM_LOWER) % (LIM_UPPER-LIM_LOWER)
                 indiv[i] = min(LIM_UPPER, max(LIM_LOWER, new_val))
 
@@ -125,12 +125,16 @@ class SingleEA():
     def survivor_selection(self, pop: ndarray, pop_fit: ndarray) -> tuple[ndarray, ndarray]:
         """
         TODO: decide survivor selection method.
+        For now exponential rank-based.
         """
-        survivor_is = random.sample(range(len(pop)), self.pop_size)
-        survivors = np.zeros((0, self.n_weights))
-        for i in survivor_is:
-            survivors = np.vstack((survivors, pop[i]))
-        survivors_fit = self.get_fitness(survivors)
+        sorted_pop_indices = np.argsort(pop_fit)
+
+        pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-i), sorted_pop_indices)))
+        pop_selection_probs /= np.sum(pop_selection_probs)  # make sure all probs sum to 1
+        chosen = np.random.choice(pop.shape[0], self.pop_size, p=pop_selection_probs, replace=False)
+
+        survivors = pop[chosen]
+        survivors_fit = pop_fit[chosen]
 
         return (survivors, survivors_fit)
 
@@ -140,18 +144,18 @@ class SingleEA():
 
         # Select from both parents and offspring TODO
         alltogether = np.vstack((self.pop, offspring))
-        fit_alltogether = np.append(self.pop_fit, offspring_fit)
-        survivors, survivors_fit = self.survivor_selection(alltogether, fit_alltogether)
+        alltogether_fit = np.append(self.pop_fit, offspring_fit)
+        survivors, survivors_fit = self.survivor_selection(alltogether, alltogether_fit)
 
         return (survivors, survivors_fit)
 
-    def stats(self, fit_pop):
+    def stats(self, pop_fit):
         """
         TODO very basic, could be better :)
         """
-        best_fit = np.max(fit_pop)  # self.last_best_fit
-        mean_fit = np.mean(fit_pop)
-        std_fit = np.std(fit_pop)
+        best_fit = np.max(pop_fit)
+        mean_fit = np.mean(pop_fit)
+        std_fit = np.std(pop_fit)
 
         print(f"{self.gen},{self.id}:\tenemies:{self.env.enemies}\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}")
         enemies_str = "".join([str(e) for e in self.env.enemies])
@@ -161,7 +165,7 @@ class SingleEA():
     def run_generation(self):
         survivors, survivors_fit = self.evolve_pop()
 
-        self.stats(survivors)
+        self.stats(survivors_fit)
 
         self.pop = survivors
         self.pop_fit = survivors_fit

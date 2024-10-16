@@ -44,7 +44,7 @@ class ComplexEA():
         self.generalist_EA = SingleEA(
             id=-1,
             experiment_name=self.experiment_name,
-            enemies=[1,2,3,4,5,6,7,8],
+            enemies=[1, 2, 3, 4, 5, 6, 7, 8],
             pop_size=0,
             pop=np.array([])
         )
@@ -53,7 +53,6 @@ class ComplexEA():
         """
         Returns individuals from pop that performs best for all 8 enemies.
         """
-        self.generalist_EA.pop = pop
         pop_fit = self.generalist_EA.get_fitness(pop)
 
         best_i = np.argmax(pop_fit)
@@ -116,6 +115,7 @@ class ComplexEA():
 
             # TODO: get best individual?
             if ea.communicates and ea.gen > 0 and ea.gen % EPOCH == 0:  # migration
+                print("MIGRATION")
                 migrants = np.zeros((0, self.EAs[0].n_weights))
                 for ea in self.EAs:
                     migrants = ea.emigration()
