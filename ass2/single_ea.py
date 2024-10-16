@@ -37,9 +37,17 @@ class SingleEA():
         if pop is None:
             (self.pop, self.pop_fit) = self.gen_pop(self.pop_size)
         else:
-            # assert len(pop) == self.pop_size TODO
+            if len(pop) > self.pop_size:  # survivor selection to reduce population
+                pop_fit = self.get_fitness(pop)
+                pop, pop_fit = self.survivor_selection(pop, pop_fit, self.pop_size)
+            else:
+                if len(pop) < self.pop_size:  # clone individuals to increase population
+                    for _ in range(self.pop_size - len(pop)):
+                        pop = np.vstack((pop, np.copy(random.choice(pop))))
+                pop_fit = self.get_fitness(pop)
+
             self.pop = pop
-            self.pop_fit = self.get_fitness(pop)
+            self.pop_fit = pop_fit
 
     def simulate(self, pop) -> float:
         fitness, playerlife, enemylife, time = self.env.play(pcont=pop)
@@ -122,16 +130,23 @@ class SingleEA():
 
         return all_offspring_weights
 
-    def survivor_selection(self, pop: ndarray, pop_fit: ndarray) -> tuple[ndarray, ndarray]:
+    def survivor_selection(self, pop: ndarray, pop_fit: ndarray, n_survivors: int) -> tuple[ndarray, ndarray]:
         """
         TODO: decide survivor selection method.
         For now exponential rank-based.
         """
+        best_i = np.argmax(pop_fit)
+
         sorted_pop_indices = np.argsort(pop_fit)
 
         pop_selection_probs = np.array(list(map(lambda i: 1 - np.e**(-i), sorted_pop_indices)))
+        pop_selection_probs[best_i] = 0  # best individual is added at the end, so should not be chosen here
         pop_selection_probs /= np.sum(pop_selection_probs)  # make sure all probs sum to 1
-        chosen = np.random.choice(pop.shape[0], self.pop_size, p=pop_selection_probs, replace=False)
+        if n_survivors > 1:
+            chosen = np.random.choice(pop.shape[0], n_survivors-1, p=pop_selection_probs, replace=False)
+        else:
+            chosen = np.array([])
+        chosen = np.append(chosen, best_i)  # elitism: add best individual
 
         survivors = pop[chosen]
         survivors_fit = pop_fit[chosen]
@@ -145,7 +160,7 @@ class SingleEA():
         # Select from both parents and offspring TODO
         alltogether = np.vstack((self.pop, offspring))
         alltogether_fit = np.append(self.pop_fit, offspring_fit)
-        survivors, survivors_fit = self.survivor_selection(alltogether, alltogether_fit)
+        survivors, survivors_fit = self.survivor_selection(alltogether, alltogether_fit, self.pop_size)
 
         return (survivors, survivors_fit)
 
@@ -178,11 +193,13 @@ class SingleEA():
         """
         Returns NUM_MIGRATION individuals according to TODO selection method
         to be copied to other EAs during migration.
+        For now: same as survivor selection
         """
-        migrant_is = random.sample(range(len(self.pop)), NUM_MIGRATION)
-        migrants = np.zeros((0, self.n_weights))
-        for i in migrant_is:
-            migrants = np.vstack((migrants, self.pop[i]))
+        migrants, _ = self.survivor_selection(self.pop, self.pop_fit, NUM_MIGRATION)
+        # migrant_is = random.sample(range(len(self.pop)), NUM_MIGRATION)
+        # migrants = np.zeros((0, self.n_weights))
+        # for i in migrant_is:
+        #     migrants = np.vstack((migrants, self.pop[i]))
 
         return migrants
 

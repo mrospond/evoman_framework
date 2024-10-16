@@ -107,13 +107,15 @@ class ComplexEA():
 
             self.EAs = new_EAs
 
+        if len(self.EAs) == 1:
+            self.EAs[0].run_generation()
+        else:  # TODO: parallelize
+            for ea in self.EAs:
+                ea.run_generation()
+
         pop_all = np.zeros((0, self.EAs[0].n_weights))
         for ea in self.EAs:
-            ea.run_generation()
-
             pop_all = np.vstack((pop_all, ea.pop))
-
-            # TODO: get best individual?
             if ea.communicates and ea.gen > 0 and ea.gen % EPOCH == 0:  # migration
                 print("MIGRATION")
                 migrants = np.zeros((0, self.EAs[0].n_weights))
@@ -131,7 +133,7 @@ class ComplexEA():
         self.gen += 1
 
 if __name__ == "__main__":
-    SAVE_GENERALIST = 1
+    SAVE_GENERALIST = 100
     complex_ea = ComplexEA("paper", ENEMIES)
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()
