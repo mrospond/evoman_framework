@@ -15,12 +15,14 @@ from demo_controller import player_controller
 # imports other libs
 import numpy as np
 
-experiment_name = 'controller_generalist_demo'
+experiment_name = 'our_controller_generalist_demo'
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
+sol_path = "./multi_demo/best.txt"  #Replace with the solution path
+
 # Update the number of neurons for this specific example
-n_hidden_neurons = 0
+n_hidden_neurons = 10
 
 # initializes environment for multi objetive mode (generalist)  with static enemy and ai player
 env = Environment(experiment_name=experiment_name,
@@ -29,9 +31,9 @@ env = Environment(experiment_name=experiment_name,
 		  		  speed="normal",
 				  enemymode="static",
 				  level=2,
-				  visuals = True )
+				  visuals = True)
 
-sol = np.loadtxt('solutions_demo/demo_all.txt')
+sol = np.loadtxt(sol_path)
 print('\n LOADING SAVED GENERALIST SOLUTION FOR ALL ENEMIES \n')
 
 # tests saved demo solutions for each enemy
