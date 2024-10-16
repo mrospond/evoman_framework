@@ -9,6 +9,9 @@ from global_params import *
 from numpy import ndarray
 from single_ea import SingleEA
 
+headless = True #Change to false if you want to visualize at some points. Not sure if it can be switched on and off on the fly
+if headless:
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 class ComplexEA():
     def __init__(self, ea_name: str, enemies: list[int]) -> None:
@@ -46,7 +49,7 @@ class ComplexEA():
             experiment_name=self.experiment_name,
             enemies=[1, 2, 3, 4, 5, 6, 7, 8],
             pop_size=0,
-            pop=np.array([])
+            pop=np.array([]),
         )
 
     def save_best_generalist(self, pop: ndarray) -> None:
