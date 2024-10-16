@@ -133,7 +133,7 @@ class ComplexEA():
         self.gen += 1
 
 if __name__ == "__main__":
-    SAVE_GENERALIST = 100
+    SAVE_GENERALIST = 1
     complex_ea = ComplexEA("paper", ENEMIES)
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()
