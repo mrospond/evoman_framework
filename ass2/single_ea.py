@@ -73,8 +73,7 @@ class SingleEA():
 
     def parent_selection(self) -> ndarray:
         """
-        TODO: decide on parent selection method.
-        Tournament with k=2.
+        Tournament selection with k=2.
         Sample: no replacement
         """
         sample = random.sample(range(len(self.pop)), TOURNAMENT_K)  # generate indexes of sampled individuals
@@ -90,10 +89,9 @@ class SingleEA():
 
     def recombination(self, p1: ndarray, p2: ndarray) -> tuple[ndarray, ndarray]:
         """
-        TODO: decide on recombination method.
         n-point crossover with n=2.
         """
-        if random.uniform(0, 1) <= CROSSOVER_PROB:  # TODO: for pair or indiv?
+        if random.uniform(0, 1) <= CROSSOVER_PROB:
             # Crossover points
             cp1 = random.choice(range(len(p1)-1))
             cp2 = random.choice(range(cp1+1, len(p1)))
@@ -110,7 +108,7 @@ class SingleEA():
         """
         Mutate the individual weights of indiv. For each weight, a new value is
         generated that determines whether it will be mutated, and if so, a
-        new value from a TODO distribution is drawn.
+        new value from a Gaussian distribution is drawn.
         """
         for i in range(len(indiv)):
             if random.uniform(0, 1) <= MUTATION_PROB:
@@ -137,8 +135,7 @@ class SingleEA():
 
     def survivor_selection(self, pop: ndarray, pop_fit: ndarray, n_survivors: int) -> tuple[ndarray, ndarray]:
         """
-        TODO: decide survivor selection method.
-        For now exponential rank-based.
+        Select n_survivors from pop with stochastic rank-based selection.
         """
         best_i = np.argmax(pop_fit)
 
@@ -156,13 +153,17 @@ class SingleEA():
         survivors = pop[chosen]
         survivors_fit = pop_fit[chosen]
 
+        # Save weights of best one
+        with open(f"{self.env.experiment_name}/weights_competition.csv", "a") as f:
+            f.write(str(pop_fit[best_i]) + "," + ",".join([str(w) for w in pop[best_i]]) + "\n")
+
         return (survivors, survivors_fit)
 
     def evolve_pop(self) -> tuple[ndarray, ndarray]:
         offspring = self.reproduce()
         offspring_fit = self.get_fitness(offspring)
 
-        # Select from both parents and offspring TODO
+        # Select from both parents and offspring
         alltogether = np.vstack((self.pop, offspring))
         alltogether_fit = np.append(self.pop_fit, offspring_fit)
         survivors, survivors_fit = self.survivor_selection(alltogether, alltogether_fit, self.pop_size)
@@ -170,16 +171,13 @@ class SingleEA():
         return (survivors, survivors_fit)
 
     def stats(self, pop_fit):
-        """
-        TODO very basic, could be better :)
-        """
         best_fit = np.max(pop_fit)
         mean_fit = np.mean(pop_fit)
         std_fit = np.std(pop_fit)
 
         print(f"{self.gen},{self.id}:\tenemies:{self.env.enemies}\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}")
         enemies_str = "".join([str(e) for e in self.env.enemies])
-        with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:  # TODO: parallel
+        with open(f"{self.env.experiment_name}/stats.csv", "a+") as f:
             f.write(f"{self.gen},{self.id},{enemies_str},{best_fit},{mean_fit},{std_fit}\n")
 
     def run_generation(self):
@@ -194,19 +192,20 @@ class SingleEA():
 
         self.gen += 1
 
-    def emigration(self) -> ndarray:
+    def emigration(self) -> tuple[ndarray, ndarray]:
         """
-        Returns NUM_MIGRATION individuals according to TODO selection method
-        to be copied to other EAs during migration.
-        For now: same as survivor selection
+        Returns NUM_MIGRATION individuals according to exponential rank-based
+        selection and random selection, respectively.
         """
-        migrants, _ = self.survivor_selection(self.pop, self.pop_fit, NUM_MIGRATION)
-        # migrant_is = random.sample(range(len(self.pop)), NUM_MIGRATION)
-        # migrants = np.zeros((0, self.n_weights))
-        # for i in migrant_is:
-        #     migrants = np.vstack((migrants, self.pop[i]))
 
-        return migrants
+        migrants_rank_based, _ = self.survivor_selection(self.pop, self.pop_fit, NUM_MIGRATION)
+
+        migrant_is = random.sample(range(len(self.pop)), NUM_MIGRATION)
+        migrants_random = np.zeros((0, self.n_weights))
+        for i in migrant_is:
+            migrants_random = np.vstack((migrants_random, self.pop[i]))
+
+        return (migrants_rank_based, migrants_random)
 
     def immigration(self, migrants: ndarray) -> None:
         """
