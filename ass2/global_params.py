@@ -1,4 +1,4 @@
-SAVE_GENERALIST = 1  # interval of generations at which the 
+SAVE_GENERALIST = 1  # interval of generations at which the
 
 # Weights
 N_HIDDEN_NEURONS = 10
@@ -18,7 +18,6 @@ ENEMIES = [1, 2, 3, 4, 5, 6, 7, 8]
 MUTATION_PROB = 0.03
 CROSSOVER_PROB = 0.6
 TOURNAMENT_K = 2
-END_TOURNAMENT_K = 5
 
 # Island EA
 NUM_ISLANDS = 4

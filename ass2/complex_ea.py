@@ -18,7 +18,7 @@ class ComplexEA():
     def __init__(self, ea_name: str, enemies: list[int], mode: str) -> None:
         self.enemies = enemies
         self.mode = mode.strip().lower()
-        assert self.mode in ["random", "fit", "cheat"]
+        assert self.mode in ["random", "fit", "cheat"]  # fit = only specialized, cheat = specialized + 1 generalized
 
         # Create folder
         enemies_str = "".join([str(e) for e in enemies])
@@ -108,9 +108,6 @@ class ComplexEA():
             )
             self.EAs = [start_EA]
         elif self.gen == (GENS_TOGETHER_START + GENS_ISLAND):  # last phase (together)
-            global TOURNAMENT_K
-            TOURNAMENT_K = END_TOURNAMENT_K
-
             pop = np.empty((0, self.EAs[0].n_weights))
             for ea in self.EAs:
                 pop = np.vstack((pop, ea.pop))
