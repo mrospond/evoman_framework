@@ -104,7 +104,7 @@ class ComplexEA():
     def run_generation(self) -> None:
         if self.gen == 0:
             start_EA = SingleEA(
-                0, self.experiment_name, self.enemies, POP_SIZE
+                "start", self.experiment_name, self.enemies, POP_SIZE
             )
             self.EAs = [start_EA]
         elif self.gen == (GENS_TOGETHER_START + GENS_ISLAND):  # last phase (together)

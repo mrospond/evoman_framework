@@ -37,5 +37,5 @@ if __name__ == "__main__":
     enemy_group = "difficulty"  # "difficulty" OR "behavior"
     mode = "cheat"  # "fit" OR "cheat"
 
-    for r in runs:
+    for r in range(runs):
         run_complex(r)

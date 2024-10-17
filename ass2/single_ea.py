@@ -13,7 +13,7 @@ class SingleEA():
         self, id: str, experiment_name: str, enemies: list[int], pop_size: int,
         pop: ndarray | None = None, communicates: bool = False
     ) -> None:
-        self.id = id
+        self.id = str(id)
 
         if len(enemies) > 1:
             multiplemode = "yes"
