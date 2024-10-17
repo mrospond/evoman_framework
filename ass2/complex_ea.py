@@ -47,6 +47,8 @@ class ComplexEA():
         with open(f"{experiment_name}/weights.csv", "w+") as f:
             f.write("")
 
+        print("done making folders")
+
         self.gen = 0
         self.EAs: list[SingleEA] = None
         self.generalist_EA = SingleEA(

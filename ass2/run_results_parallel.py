@@ -30,12 +30,12 @@ def run_complex(run):
 
 
 if __name__ == "__main__":
-    runs = 10
+    runs = 2
 
     max_workers = multiprocessing.cpu_count() - 2  # leave 2 cpus for OS
 
     enemy_group = "difficulty"  # "difficulty" OR "behavior"
     mode = "cheat"  # "fit" OR "cheat"
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:  # Use ProcessPoolExecutor over ThreadPoolExecutor, cuz our task is CPU-bound
-        executor.map(run_complex, range(runs))
+    for r in runs:
+        run_complex(r)
