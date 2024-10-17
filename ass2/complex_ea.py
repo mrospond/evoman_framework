@@ -139,10 +139,6 @@ class ComplexEA():
                 enemy_probs = self.get_enemy_probs()
                 for _ in range(NUM_ISLANDS):
                     island_enemies.append(np.random.choice(list(enemy_probs.keys()), NUM_ENEMIES, p=list(enemy_probs.values()), replace=False))
-            elif self.mode == "cheat":
-                enemy_probs = self.get_enemy_probs()
-                for _ in range(NUM_ISLANDS - 1):
-                    island_enemies.append(np.random.choice(list(enemy_probs.keys()), NUM_ENEMIES, p=list(enemy_probs.values()), replace=False))
 
             new_EAs = []
             island_size = int(POP_SIZE / NUM_ISLANDS)
