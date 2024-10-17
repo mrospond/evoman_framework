@@ -1,7 +1,3 @@
-import concurrent.futures
-import multiprocessing
-import os
-
 from complex_ea import ComplexEA
 from global_params import *
 
@@ -31,8 +27,6 @@ def run_complex(run):
 
 if __name__ == "__main__":
     runs = 2
-
-    max_workers = multiprocessing.cpu_count() - 2  # leave 2 cpus for OS
 
     enemy_group = "difficulty"  # "difficulty" OR "behavior"
     mode = "cheat"  # "fit" OR "cheat"
