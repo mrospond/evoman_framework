@@ -1,3 +1,6 @@
+import multiprocessing
+import concurrent.futures
+
 from complex_ea import ComplexEA
 from global_params import *
 
@@ -10,6 +13,9 @@ names = {
     "fit": "spec",
     "cheat": "gen"
 }
+
+enemy_group = "difficulty"  # "difficulty" OR "behavior"
+mode = "cheat"  # "fit" OR "cheat"
 
 
 def run_complex(run):
@@ -28,8 +34,13 @@ def run_complex(run):
 if __name__ == "__main__":
     runs = 2
 
-    enemy_group = "difficulty"  # "difficulty" OR "behavior"
-    mode = "cheat"  # "fit" OR "cheat"
+    # for r in range(runs):
+    #     run_complex(r)
 
-    for r in range(runs):
-        run_complex(r)
+    max_workers = multiprocessing.cpu_count() - 2  # leave 2 cpus for OS
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Use ProcessPoolExecutor over ThreadPoolExecutor, cuz our task is CPU-bound
+        executor.map(run_complex, range(runs))
+
+    print("===== ALL DONE =====")
