@@ -15,24 +15,28 @@ if headless:
 
 
 class ComplexEA():
-    def __init__(self, ea_name: str, enemies: list[int], mode: str) -> None:
+    def __init__(self, ea_name: str, enemies: list[int], mode: str, run: int = None) -> None:
         self.enemies = enemies
         self.mode = mode.strip().lower()
         assert self.mode in ["random", "fit", "cheat"]  # fit = only specialized, cheat = specialized + 1 generalized
 
         # Create folder
         enemies_str = "".join([str(e) for e in enemies])
-        i = 0
-        while True:
-            experiment_name = f"./results/{ea_name}-{enemies_str}_{i}"
-            if not os.path.exists(experiment_name):
-                break
-            else:
-                i += 1
-            pass
+        if run is None:  # not being run in parallel
+            i = 0
+            while True:
+                experiment_name = f"./results/{ea_name}-{enemies_str}_{i}"
+                if not os.path.exists(experiment_name):
+                    break
+                else:
+                    i += 1
+                pass
+        else:  # being run in parallel
+            experiment_name = f"./results/{ea_name}-{enemies_str}_run_{run}"
 
+        print("results folder:", experiment_name)
         self.experiment_name = experiment_name
-        os.makedirs(experiment_name)
+        os.makedirs(experiment_name)  # this may break multiprocessing, so diff runs should be in diff folders,
         with open(f"{experiment_name}/config.json", "w+") as f:
             params = {key: value for key, value in vars(global_params).items()
                       if not (key.startswith("__"))}
