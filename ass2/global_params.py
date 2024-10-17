@@ -1,3 +1,5 @@
+SAVE_GENERALIST = 1  # interval of generations at which the 
+
 # Weights
 N_HIDDEN_NEURONS = 10
 LIM_UPPER = 1
@@ -9,8 +11,8 @@ NUM_GENS_OVERALL = 200
 ENEMIES = [1, 2, 3, 4, 5, 6, 7, 8]
 
 
-ENEMIES = [1, 3, 4, 7]  # selected based on difficulty
-ENEMIES = [2, 4, 6, 7]  # selected based on group
+# ENEMIES = [1, 3, 4, 7]  # selected based on difficulty
+# ENEMIES = [2, 4, 6, 7]  # selected based on group
 
 # Simple EA
 MUTATION_PROB = 0.03

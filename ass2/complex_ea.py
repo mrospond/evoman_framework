@@ -203,6 +203,6 @@ class ComplexEA():
 
 if __name__ == "__main__":
     SAVE_GENERALIST = 1
-    complex_ea = ComplexEA("generalized", ENEMIES, "cheat")
+    complex_ea = ComplexEA("generalized", [1, 3, 4, 7], "cheat")
     for i in range(NUM_GENS_OVERALL):
         complex_ea.run_generation()

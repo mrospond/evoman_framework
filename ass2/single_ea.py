@@ -154,8 +154,9 @@ class SingleEA():
         survivors_fit = pop_fit[chosen]
 
         # Save weights of best one
-        with open(f"{self.env.experiment_name}/weights_competition.csv", "a") as f:
-            f.write(str(pop_fit[best_i]) + "," + ",".join([str(w) for w in pop[best_i]]) + "\n")
+        if not self.id.startswith("si"):  # don't save weights for specialist islands
+            with open(f"{self.env.experiment_name}/weights.csv", "a") as f:
+                f.write(str(pop_fit[best_i]) + "," + ",".join([str(w) for w in pop[best_i]]) + "\n")
 
         return (survivors, survivors_fit)
 
