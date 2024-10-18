@@ -58,6 +58,11 @@ class SingleEA():
         fitness, playerlife, enemylife, time = self.env.play(pcont=pop)
         return fitness
 
+    def get_gain(self, indiv) -> (float, float):
+        pop = indiv
+        fitness, playerlife, enemylife, time = self.env.play(pcont=pop)
+        return playerlife, enemylife
+
     def get_fitness(self, pop) -> ndarray:
         return np.array([self.simulate(indiv) for indiv in pop])
 

@@ -25,14 +25,14 @@ class ComplexEA():
         if run is None:  # not being run in parallel
             i = 0
             while True:
-                experiment_name = f"./results/{ea_name}-{enemies_str}_{i}"
+                experiment_name = f"./results2/{ea_name}-{enemies_str}_{i}"
                 if not os.path.exists(experiment_name):
                     break
                 else:
                     i += 1
                 pass
         else:  # being run in parallel
-            experiment_name = f"./results/{ea_name}-{enemies_str}_run_{run}"
+            experiment_name = f"./results2/{ea_name}-{enemies_str}_run_{run}"
 
         print("results folder:", experiment_name)
         self.experiment_name = experiment_name
@@ -45,7 +45,7 @@ class ComplexEA():
         with open(f"{experiment_name}/stats.csv", "w+") as f:
             f.write("gen,id,enemies,best_fit,mean_fit,std_fit\n")
 
-        with open(f"{experiment_name}/weights_competition.csv", "w+") as f:
+        with open(f"{experiment_name}/weights_overall.csv", "w+") as f:
             f.write("")
 
         with open(f"{experiment_name}/weights.csv", "w+") as f:
@@ -58,7 +58,7 @@ class ComplexEA():
         self.generalist_EA = SingleEA(
             id="generalist",
             experiment_name=self.experiment_name,
-            enemies=[1, 2, 3, 4, 5, 6, 7, 8],
+            enemies=self.enemies,
             pop_size=0,
             pop=np.array([]),
         )
@@ -102,7 +102,7 @@ class ComplexEA():
         best_weights = pop[best_i]
         best_fitness = pop_fit[best_i]
 
-        with open(f"{self.experiment_name}/weights_competition.csv", "a") as f:
+        with open(f"{self.experiment_name}/weights_overall.csv", "a") as f:
             f.write(str(best_fitness) + "," + ",".join([str(w) for w in best_weights]) + "\n")
 
     def run_generation(self) -> None:
