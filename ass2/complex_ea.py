@@ -45,6 +45,9 @@ class ComplexEA():
         with open(f"{experiment_name}/stats.csv", "w+") as f:
             f.write("gen,id,enemies,best_fit,mean_fit,std_fit\n")
 
+        with open(f"{experiment_name}/stats_overall.csv", "a+") as f:
+            f.write("gen,best_fit,mean_fit,std_fit\n")
+
         with open(f"{experiment_name}/weights_overall.csv", "w+") as f:
             f.write("")
 
@@ -92,11 +95,17 @@ class ComplexEA():
 
         return norm_dict
 
-    def save_best_generalist(self, pop: ndarray) -> None:
-        """
-        Returns individuals from pop that performs best for all 8 enemies.
-        """
+    def save_all_pop_stats(self, pop: ndarray) -> None:
         pop_fit = self.generalist_EA.get_fitness(pop)
+
+        best_fit = np.max(pop_fit)
+        mean_fit = np.mean(pop_fit)
+        std_fit = np.std(pop_fit)
+
+        enemies_str = "".join([str(e) for e in self.enemies])
+        print(f"{self.gen},overall:\tenemies:{enemies_str}\tbest_fit:{best_fit}\tmean_fit:{mean_fit}\tstd_fit:{std_fit}")
+        with open(f"{self.experiment_name}/stats_overall.csv", "a+") as f:
+            f.write(f"{self.gen},{best_fit},{mean_fit},{std_fit}\n")
 
         best_i = np.argmax(pop_fit)
         best_weights = pop[best_i]
@@ -195,7 +204,7 @@ class ComplexEA():
                             immi_ea.immigration(migrants_random)
 
         if self.gen % SAVE_GENERALIST == 0:
-            self.save_best_generalist(pop_all)
+            self.save_all_pop_stats(pop_all)
 
         self.gen += 1
 
