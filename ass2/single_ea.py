@@ -31,6 +31,7 @@ class SingleEA():
             player_controller=player_controller(N_HIDDEN_NEURONS),
             speed="fastest",
             visuals=False,
+            savelogs="no",
         )
 
         self.n_weights = (self.env.get_num_sensors()+1)*N_HIDDEN_NEURONS + (N_HIDDEN_NEURONS+1)*5
