@@ -5,9 +5,11 @@ import os
 best_fit = 0
 best_weights = None
 
-for run_folder in os.listdir("results"):
+for run_folder in os.listdir("results2"):
+    if run_folder=="plots":
+        continue
     print(run_folder)
-    with open(os.path.join("results", run_folder, "weights_competition.csv")) as f:
+    with open(os.path.join("results2", run_folder, "weights_overall.csv")) as f:
         reader = csv.reader(f, delimiter=",")
         best_fit_folder = 0
         for line in reader:
