@@ -47,7 +47,7 @@ def get_gain(weights: np.ndarray) -> np.float64:
     player, enemy = ea.get_gain(weights)
     return player - enemy # gain
 
-def save_box_plot(gains: dict, save_path: str) -> None:
+def save_boxplots_and_ttest(gains: dict, save_path: str) -> None:
     """
     generates two pairs of box plots (one pair per training group => 4 boxes)
     """
@@ -81,6 +81,31 @@ def save_box_plot(gains: dict, save_path: str) -> None:
     plt.ylabel("Gain", fontsize=16)
     plt.savefig(os.path.join(save_path,'boxplot_1347.png'))
 
+    ## TTESTS
+    # t-tests between groups in both datasets
+    from scipy import stats
+
+    t_stat_2467, p_value_2467 = stats.ttest_ind(gains_2467["gen-2467"], gains_2467["spec-2467"])
+    t_stat_1347, p_value_1347 = stats.ttest_ind(gains_1347["gen-1347"], gains_1347["spec-1347"])
+
+    # results
+    print("T-test for gen-2467 vs spec-2467:")
+    print(f"T-statistic: {t_stat_2467}, P-value: {p_value_2467}")
+
+    print("T-test for gen-1347 vs spec-1347:")
+    print(f"T-statistic: {t_stat_1347}, P-value: {p_value_1347}")
+
+    # interpretation based on p-value (significance level = 0.05)
+    if p_value_2467 < 0.05:
+        print("There is a significant difference between gen-2467 and spec-2467.")
+    else:
+        print("There is no significant difference between gen-2467 and spec-2467.")
+
+    if p_value_1347 < 0.05:
+        print("There is a significant difference between gen-1347 and spec-1347.")
+    else:
+        print("There is no significant difference between gen-1347 and spec-1347.")
+
 
 if __name__ == "__main__":
     save_best_weights_for_each_run()
@@ -106,4 +131,4 @@ if __name__ == "__main__":
     # for key, values in gains_dict.items():
     #     print(f"Prefix: {key}, Number of values: {len(values)}")
 
-    save_box_plot(gains_dict, plot_save_path)
+    save_boxplots_and_ttest(gains_dict, plot_save_path)
