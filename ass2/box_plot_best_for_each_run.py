@@ -67,7 +67,8 @@ def save_boxplots_and_ttest(gains: dict, save_path: str) -> None:
     plt.xticks(fontsize=16)
     plt.title("Box Plot of gen-2467 and spec-2467", fontsize=16)
     plt.ylabel("Gain", fontsize=16)
-    plt.savefig(os.path.join('results2','plots','boxplot_2467.png'))
+    plt.scatter([1] * len(gains_2467["gen-2467"]), gains_2467["gen-2467"], color='red', label='gen-2467', alpha=0.6)
+    plt.scatter([2] * len(gains_2467["spec-2467"]), gains_2467["spec-2467"], color='blue', label='spec-2467', alpha=0.6)
     plt.savefig(os.path.join(save_path, 'boxplot_2467.png'))
 
     plt.clf()
@@ -79,10 +80,12 @@ def save_boxplots_and_ttest(gains: dict, save_path: str) -> None:
     plt.xticks(fontsize=16)
     plt.title("Box Plot of gen-1347 and spec-1347", fontsize=16)
     plt.ylabel("Gain", fontsize=16)
+    plt.scatter([1] * len(gains_1347["gen-1347"]), gains_1347["gen-1347"], color='red', label='gen-1347', alpha=0.6)
+    plt.scatter([2] * len(gains_1347["spec-1347"]), gains_1347["spec-1347"], color='blue', label='spec-1347', alpha=0.6)
     plt.savefig(os.path.join(save_path,'boxplot_1347.png'))
 
     ## TTESTS
-    # t-tests between groups in both datasets
+    # t-tests between datasets
     from scipy import stats
 
     t_stat_2467, p_value_2467 = stats.ttest_ind(gains_2467["gen-2467"], gains_2467["spec-2467"])
@@ -95,16 +98,16 @@ def save_boxplots_and_ttest(gains: dict, save_path: str) -> None:
     print("T-test for gen-1347 vs spec-1347:")
     print(f"T-statistic: {t_stat_1347}, P-value: {p_value_1347}")
 
-    # interpretation based on p-value (significance level = 0.05)
+    # significance level = 0.05
     if p_value_2467 < 0.05:
-        print("There is a significant difference between gen-2467 and spec-2467.")
+        print("significant difference between gen-2467 and spec-2467.")
     else:
-        print("There is no significant difference between gen-2467 and spec-2467.")
+        print("no significant difference between gen-2467 and spec-2467.")
 
     if p_value_1347 < 0.05:
-        print("There is a significant difference between gen-1347 and spec-1347.")
+        print("significant difference between gen-1347 and spec-1347.")
     else:
-        print("There is no significant difference between gen-1347 and spec-1347.")
+        print("no significant difference between gen-1347 and spec-1347.")
 
 
 if __name__ == "__main__":
