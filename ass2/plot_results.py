@@ -122,7 +122,7 @@ def plot_stats(stats_spec: dict, stats_gen: dict, enemy_group: list):
 
     ax1.set_xlabel('Generation', fontsize=16)
     ax1.set_ylabel('Fitness', fontsize=16)
-    fig.suptitle(f'Average fitness for EAs trained on enemies {" ".join(str(x) for x in enemy_group)}', fontsize=18)
+    fig.suptitle(f'Average and best fitness for EAs trained on enemies {" ".join(str(x) for x in enemy_group)}', fontsize=18)
 
     # fit
     ax1.plot(generations, avg_best_fit_fit, label='best fitness spec', color='blue', lw=1)
